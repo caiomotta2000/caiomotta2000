@@ -271,7 +271,7 @@
   <section id="tela-painel" class="tela">
     <div class="topo">
       <div class="ola"><div class="av" id="p-avatar">🦊</div><div><small>Olá,</small><b id="p-nome">Leitor</b></div></div>
-      <div style="display:flex;gap:6px"><button class="btn peq" data-ir="historico" title="Histórico">📜</button><button class="btn peq" data-ir="resumo" title="Área dos pais">👨‍👩‍👦</button><button class="btn peq branco" id="btn-sair">Sair 👋</button></div>
+      <div style="display:flex;gap:6px"><button class="btn peq" data-ir="historico" title="Histórico">📜</button><button class="btn peq" data-ir="feedback" title="Enviar feedback">💌</button><button class="btn peq" data-ir="resumo" title="Área dos pais">👨‍👩‍👦</button><button class="btn peq branco" id="btn-sair">Sair 👋</button></div>
     </div>
     <div class="mascote-area">
       <div class="mascote" id="m-painel"></div>
@@ -495,6 +495,26 @@
   </section>
 
   <!-- DIÁRIO DO DIA -->
+  <section id="tela-feedback" class="tela">
+    <button class="voltar" data-ir="painel">⬅ Voltar</button>
+    <div class="mascote-area"><div class="mascote" id="m-feedback"></div><div class="balao" id="balao-feedback">Tem uma ideia, achou um problema ou quer mandar um recado? Eu levo para o criador do app! 💌</div></div>
+    <div class="cartao">
+      <h2>💌 Enviar feedback</h2>
+      <label for="fb-tipo">Sobre o quê?</label>
+      <select id="fb-tipo">
+        <option value="Ideia">💡 Ideia</option>
+        <option value="Problema">🐞 Problema</option>
+        <option value="Elogio">💜 Elogio</option>
+        <option value="Outro">✉️ Outro</option>
+      </select>
+      <label for="fb-msg">Sua mensagem</label>
+      <textarea id="fb-msg" maxlength="2000" placeholder="Escreva aqui..."></textarea>
+      <div class="erro" id="fb-erro"></div>
+      <button class="btn verde" id="fb-enviar">Enviar 📨</button>
+      <a class="btn branco" id="fb-mail" style="display:none;text-align:center;text-decoration:none" href="#">✉️ Enviar pelo app Mail</a>
+    </div>
+  </section>
+
   <section id="tela-diario" class="tela">
     <button class="voltar" data-ir="registrar">⬅ Voltar</button>
     <div class="mascote-area"><div class="mascote" id="m-diario"></div><div class="balao" id="balao-diario"></div></div>
@@ -619,6 +639,7 @@ function ir(tela){
   if(tela==='medalhas') montarMedalhas();
   if(tela==='quero') montarQuero();
   if(tela==='resumo') montarResumo();
+  if(tela==='feedback') montarFeedback();
 }
 document.querySelectorAll('[data-ir]').forEach(b=>b.addEventListener('click',()=>ir(b.dataset.ir)));
 
@@ -1592,6 +1613,44 @@ if(banco.ultimo && banco.usuarios[banco.ultimo]){
 }
 montarLogin();
 window.addEventListener('resize',()=>{ if(atual && document.getElementById('tela-painel').classList.contains('ativa')) desenharGrafico(leiturasDoMes()); });
+/* ============ FEEDBACK PARA O ADMINISTRADOR ============ */
+const FEEDBACK_EMAIL='caiomotta2000@gmail.com';
+function montarFeedback(){
+  document.getElementById('fb-erro').textContent='';
+  document.getElementById('fb-mail').style.display='none';
+  document.getElementById('balao-feedback').textContent='Tem uma ideia, achou um problema ou quer mandar um recado? Eu levo para o criador do app! 💌';
+  mascote('m-feedback','feliz');
+}
+function dadosFeedback(){
+  const tipo=document.getElementById('fb-tipo').value, msg=document.getElementById('fb-msg').value.trim();
+  return {tipo,msg,quem:atual||'(sem login)',quando:new Date().toLocaleString('pt-BR'),aparelho:navigator.userAgent};
+}
+function linkMailFeedback(f){
+  const assunto=`Leitura Divertida: ${f.tipo} de ${f.quem}`;
+  const corpo=`${f.msg}\n\n— ${f.quem}, ${f.quando}`;
+  return `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
+}
+document.getElementById('fb-enviar').onclick=async()=>{
+  const erro=document.getElementById('fb-erro'), bt=document.getElementById('fb-enviar'), f=dadosFeedback();
+  erro.textContent='';
+  if(f.msg.length<3){ erro.textContent='Escreva sua mensagem primeiro ✏️'; mascote('m-feedback','ops',true); return; }
+  bt.disabled=true; document.getElementById('balao-feedback').textContent='Enviando... ✈️'; mascote('m-feedback','pensa');
+  try{
+    const r=await fetch('https://formsubmit.co/ajax/'+FEEDBACK_EMAIL,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({_subject:`Leitura Divertida: ${f.tipo} de ${f.quem}`,_template:'table',_captcha:'false',Tipo:f.tipo,Mensagem:f.msg,Leitor:f.quem,Quando:f.quando,Aparelho:f.aparelho})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok || j.success===false || j.success==='false') throw new Error(j.message||'falhou');
+    document.getElementById('fb-msg').value='';
+    document.getElementById('balao-feedback').textContent='Mensagem enviada! Obrigada por ajudar a melhorar o app! 💜';
+    mascote('m-feedback','uau',true); confete(); toast('Feedback enviado! 📨');
+  }catch(e){
+    document.getElementById('balao-feedback').textContent='Ops, não consegui enviar agora. Você pode mandar pelo app Mail! 📧';
+    erro.textContent='Sem conexão ou o envio falhou.';
+    const a=document.getElementById('fb-mail'); a.href=linkMailFeedback(f); a.style.display='block';
+    mascote('m-feedback','ops',true);
+  }finally{ bt.disabled=false; }
+};
+
 /* ============ MÚSICA DE FUNDO (composta no app, sem arquivo) ============ */
 const MUSICA_KEY='leituraDivertida_musica';
 const musica={ac:null,mestre:null,ligada:false,timer:null,prox:0,passo:0,frase:0};
@@ -1782,6 +1841,11 @@ const EN={
 'Guardar no diário 📓':'Save to journal 📓','Escreva pelo menos 5 palavras em cada resposta ✏️':'Write at least 5 words in each answer ✏️',
 'Conta um pouquinho mais? Quem? O quê? Por quê? 🔍':'Can you tell me a bit more? Who? What? Why? 🔍','Diário guardado! 📓':'Journal saved! 📓',
 'Que diário caprichado! Agora pode registrar a leitura nova. 🎉':'What a great journal! Now you can log the new reading. 🎉',
+'Enviar feedback':'Send feedback','Tem uma ideia, achou um problema ou quer mandar um recado? Eu levo para o criador do app! 💌':"Got an idea, found a problem or want to send a message? I'll take it to the app's creator! 💌",
+'💌 Enviar feedback':'💌 Send feedback','Sobre o quê?':'About what?','💡 Ideia':'💡 Idea','🐞 Problema':'🐞 Problem','💜 Elogio':'💜 Compliment','✉️ Outro':'✉️ Other',
+'Sua mensagem':'Your message','Escreva aqui...':'Write here...','Enviar 📨':'Send 📨','✉️ Enviar pelo app Mail':'✉️ Send with the Mail app','Escreva sua mensagem primeiro ✏️':'Write your message first ✏️',
+'Enviando... ✈️':'Sending... ✈️','Mensagem enviada! Obrigada por ajudar a melhorar o app! 💜':'Message sent! Thanks for helping make the app better! 💜','Feedback enviado! 📨':'Feedback sent! 📨',
+'Ops, não consegui enviar agora. Você pode mandar pelo app Mail! 📧':"Oops, I couldn't send it right now. You can send it with the Mail app! 📧",'Sem conexão ou o envio falhou.':'No connection, or sending failed.',
 'Nível':'Level','XP':'XP','Criança':'Child','Conquistada!':'Earned!','nenhum':'none','Legalzinho!':'Pretty good!','Legalzinho! 🙂':'Pretty good! 🙂'
 };
 const MES_EN={Janeiro:'January',Fevereiro:'February','Março':'March',Abril:'April',Maio:'May',Junho:'June',Julho:'July',Agosto:'August',Setembro:'September',Outubro:'October',Novembro:'November',Dezembro:'December'};
