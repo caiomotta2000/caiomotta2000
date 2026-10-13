@@ -227,9 +227,16 @@
   .q-item{background:#fff;border:3px solid var(--tinta);border-radius:16px;padding:8px 12px;margin-top:8px;display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
   .det-topo{display:flex;gap:14px;align-items:center}
   .det-topo .capa{width:90px;aspect-ratio:3/4;border:3px solid var(--tinta);border-radius:10px;background:#ffd23f center/cover;display:flex;align-items:center;justify-content:center;font-size:2.4rem;box-shadow:3px 3px 0 var(--tinta);flex-shrink:0}
+  .btn-musica{position:fixed;bottom:16px;left:16px;z-index:25;width:52px;height:52px;border-radius:50%;
+    border:3px solid var(--tinta);background:#fff;font-size:1.6rem;cursor:pointer;box-shadow:0 4px 0 var(--tinta);
+    display:flex;align-items:center;justify-content:center;padding:0}
+  .btn-musica.tocando{background:#fff3c4;animation:balanca 1.6s ease-in-out infinite}
+  .btn-musica.mudo{opacity:.75}
+  @keyframes balanca{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
 </style>
 </head>
 <body>
+<button id="btn-musica" class="btn-musica mudo" aria-label="Ligar ou desligar a música" onclick="alternarMusica()">🔇</button>
 <div class="app">
 
   <!-- LOGIN -->
@@ -1579,6 +1586,78 @@ if(banco.ultimo && banco.usuarios[banco.ultimo]){
 }
 montarLogin();
 window.addEventListener('resize',()=>{ if(atual && document.getElementById('tela-painel').classList.contains('ativa')) desenharGrafico(leiturasDoMes()); });
+/* ============ MÚSICA DE FUNDO (composta no app, sem arquivo) ============ */
+const MUSICA_KEY='leituraDivertida_musica';
+const musica={ac:null,mestre:null,ligada:false,timer:null,prox:0,passo:0,frase:0};
+// Escala pentatônica de Dó: soa sempre gostosa, sem notas "erradas"
+const NOTAS={C4:261.63,D4:293.66,E4:329.63,G4:392,A4:440,C5:523.25,D5:587.33,E5:659.25,G5:783.99,A5:880,C3:130.81,F3:174.61,G3:196,A3:220};
+const FRASES=[
+  ['E5','D5','C5','D5','E5','E5','E5',null,'D5','D5','D5',null,'E5','G5','G5',null],
+  ['E5','D5','C5','D5','E5','E5','E5','C5','D5','D5','E5','D5','C5',null,null,null],
+  ['G4','A4','C5','A4','G4','E4','G4',null,'A4','C5','D5','C5','A4',null,'G4',null],
+  ['C5','E5','G5','E5','D5','C5','D5',null,'E5','D5','C5','A4','C5',null,null,null]
+];
+const BAIXOS=[['C3','G3'],['A3','E4'],['F3','C4'],['G3','D4']];
+const SEMI=60/84/2; // colcheia a 84 bpm
+
+function nota(freq,t,dur,vol,tipo){
+  const ac=musica.ac, o=ac.createOscillator(), g=ac.createGain();
+  o.type=tipo; o.frequency.value=freq;
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol,t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(musica.mestre); o.start(t); o.stop(t+dur+0.05);
+}
+function agendarMusica(){
+  const ac=musica.ac;
+  while(musica.prox < ac.currentTime+0.4){
+    const t=musica.prox, i=musica.passo%16, f=FRASES[musica.frase%FRASES.length];
+    const n=f[i]; if(n) nota(NOTAS[n],t,SEMI*1.8,0.22,'triangle');
+    if(i%4===0){ const b=BAIXOS[Math.floor(i/4)]; nota(NOTAS[b[0]],t,SEMI*3.5,0.16,'sine'); nota(NOTAS[b[1]],t+SEMI*2,SEMI*1.8,0.08,'sine'); }
+    musica.prox+=SEMI; musica.passo++;
+    if(musica.passo%16===0) musica.frase++;
+  }
+}
+function iniciarMusica(){
+  try{
+    if(!musica.ac){
+      musica.ac=new (window.AudioContext||window.webkitAudioContext)();
+      musica.mestre=musica.ac.createGain(); musica.mestre.gain.value=0.25;
+      musica.mestre.connect(musica.ac.destination);
+    }
+    if(musica.ac.state==='suspended') musica.ac.resume();
+    musica.prox=musica.ac.currentTime+0.1;
+    clearInterval(musica.timer); musica.timer=setInterval(agendarMusica,100);
+    musica.ligada=true;
+  }catch(e){ musica.ligada=false; }
+  atualizarBotaoMusica();
+}
+function pararMusica(){
+  clearInterval(musica.timer); musica.timer=null; musica.ligada=false;
+  try{ if(musica.ac) musica.ac.suspend(); }catch(e){}
+  atualizarBotaoMusica();
+}
+function atualizarBotaoMusica(){
+  const b=document.getElementById('btn-musica'); if(!b) return;
+  b.textContent=musica.ligada?'🎵':'🔇';
+  b.classList.toggle('tocando',musica.ligada); b.classList.toggle('mudo',!musica.ligada);
+}
+function alternarMusica(){
+  if(musica.ligada){ pararMusica(); try{localStorage.setItem(MUSICA_KEY,'0');}catch(e){} }
+  else { iniciarMusica(); try{localStorage.setItem(MUSICA_KEY,'1');}catch(e){} }
+}
+// O iPad só deixa tocar som depois de um toque: se a música estava ligada, volta no primeiro toque
+(function(){
+  let pref=null; try{ pref=localStorage.getItem(MUSICA_KEY); }catch(e){}
+  if(pref==='1'){
+    const volta=(ev)=>{ if(ev.target && ev.target.id==='btn-musica') return; if(!musica.ligada) iniciarMusica(); };
+    document.addEventListener('pointerdown',volta,{once:true});
+  }
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){ if(musica.ligada){ clearInterval(musica.timer); try{musica.ac.suspend();}catch(e){} } }
+    else if(musica.ligada){ iniciarMusica(); }
+  });
+})();
 </script>
 </body>
 </html>
