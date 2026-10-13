@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Leitura Divertida com a Lili</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --roxo:#7b5cff; --rosa:#ff5fa2; --amarelo:#ffd23f; --verde:#3ddc97;
+    --azul:#3ab4ff; --laranja:#ff8c42; --tinta:#2d2250; --papel:#fffaf0;
+    --pt:#3ddc97; --en:#3ab4ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Baloo 2','Comic Sans MS','Trebuchet MS',sans-serif;
+    color:var(--tinta); min-height:100vh;
+    background:#8fd3ff;
+    background-image:
+      radial-gradient(circle at 15% 20%, #fff 0 38px, transparent 39px),
+      radial-gradient(circle at 22% 18%, #fff 0 30px, transparent 31px),
+      radial-gradient(circle at 80% 12%, #fff 0 34px, transparent 35px),
+      radial-gradient(circle at 87% 14%, #fff 0 26px, transparent 27px),
+      linear-gradient(#8fd3ff 0%, #c9ecff 70%, #a6e98a 70%, #7fd36a 100%);
+    background-attachment:fixed;
+  }
+  .app{max-width:560px;margin:0 auto;padding:16px 14px 40px}
+  .tela{display:none;animation:entra .35s ease}
+  .tela.ativa{display:block}
+  @keyframes entra{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+
+  .cartao{
+    background:var(--papel); border:4px solid var(--tinta); border-radius:26px;
+    box-shadow:6px 6px 0 var(--tinta); padding:18px; margin-bottom:18px;
+  }
+  h1{font-size:2.1rem;line-height:1.05;font-weight:800}
+  h2{font-size:1.5rem;font-weight:800;margin-bottom:8px}
+  .titulo-logo{
+    text-align:center;color:#fff;font-size:2.4rem;font-weight:800;
+    -webkit-text-stroke:2px var(--tinta);text-shadow:4px 4px 0 var(--tinta);
+    margin:6px 0 10px;transform:rotate(-2deg)
+  }
+  label{display:block;font-weight:700;margin:12px 0 4px;font-size:1.1rem}
+  input[type=text],input[type=number],input[type=password],input[type=date],select{
+    width:100%;font:inherit;font-size:1.15rem;padding:10px 14px;border:3px solid var(--tinta);
+    border-radius:16px;background:#fff;color:var(--tinta);outline:none
+  }
+  input:focus,select:focus{box-shadow:0 0 0 4px var(--amarelo)}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    font:inherit;font-weight:800;font-size:1.2rem;cursor:pointer;
+    padding:12px 20px;border:4px solid var(--tinta);border-radius:20px;
+    background:var(--amarelo);color:var(--tinta);box-shadow:4px 4px 0 var(--tinta);
+    transition:transform .08s, box-shadow .08s; width:100%; margin-top:14px
+  }
+  .btn:active{transform:translate(4px,4px);box-shadow:0 0 0 var(--tinta)}
+  .btn.rosa{background:var(--rosa);color:#fff}
+  .btn.verde{background:var(--verde)}
+  .btn.azul{background:var(--azul);color:#fff}
+  .btn.branco{background:#fff}
+  .btn.peq{width:auto;font-size:1rem;padding:6px 14px;margin:0;border-width:3px;box-shadow:3px 3px 0 var(--tinta)}
+
+  /* mascote */
+  .mascote-area{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px}
+  .mascote{width:110px;flex-shrink:0;animation:flutua 2.6s ease-in-out infinite}
+  .mascote.pula{animation:pula .6s ease 2}
+  @keyframes flutua{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @keyframes pula{0%,100%{transform:translateY(0) rotate(0)}40%{transform:translateY(-26px) rotate(-8deg)}}
+  .balao{
+    position:relative;background:#fff;border:4px solid var(--tinta);border-radius:22px;
+    padding:10px 14px;font-weight:700;font-size:1.1rem;flex:1;margin-bottom:30px;
+    box-shadow:4px 4px 0 var(--tinta)
+  }
+  .balao:after{
+    content:"";position:absolute;left:-18px;bottom:14px;border:10px solid transparent;
+    border-right:14px solid var(--tinta)
+  }
+  .balao:before{
+    content:"";position:absolute;left:-10px;bottom:16px;border:8px solid transparent;
+    border-right:10px solid #fff;z-index:1
+  }
+
+  /* avatares */
+  .avatares{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+  .avatar{
+    font-size:2rem;width:58px;height:58px;border-radius:50%;border:3px solid var(--tinta);
+    background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center
+  }
+  .avatar.sel{background:var(--amarelo);transform:scale(1.12);box-shadow:3px 3px 0 var(--tinta)}
+
+  /* topo do painel */
+  .topo{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .ola{display:flex;align-items:center;gap:10px}
+  .ola .av{font-size:2.2rem;background:#fff;border:3px solid var(--tinta);border-radius:50%;width:56px;height:56px;display:flex;align-items:center;justify-content:center}
+  .ola b{font-size:1.5rem;display:block;line-height:1}
+  .ola small{font-size:1rem}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+  .stat{border:4px solid var(--tinta);border-radius:20px;padding:8px;text-align:center;box-shadow:4px 4px 0 var(--tinta)}
+  .stat b{font-size:1.8rem;display:block;line-height:1.1}
+  .stat span{font-size:.9rem;font-weight:700}
+
+  .meta-barra{height:28px;border:4px solid var(--tinta);border-radius:20px;background:#fff;overflow:hidden;position:relative;margin:6px 0}
+  .meta-enche{height:100%;background:repeating-linear-gradient(45deg,var(--rosa) 0 14px,#ff86ba 14px 28px);transition:width .8s}
+  .meta-txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800}
+  canvas{width:100%;height:220px;display:block}
+  .legenda{display:flex;gap:16px;justify-content:center;font-weight:700;margin-top:6px}
+  .legenda i{display:inline-block;width:16px;height:16px;border-radius:5px;border:2px solid var(--tinta);vertical-align:-2px;margin-right:4px}
+
+  .atalhos{display:grid;grid-template-columns:1fr;gap:12px}
+  .atalho{
+    display:flex;align-items:center;gap:14px;font:inherit;font-weight:800;font-size:1.35rem;
+    border:4px solid var(--tinta);border-radius:24px;padding:14px 18px;cursor:pointer;
+    box-shadow:5px 5px 0 var(--tinta);text-align:left;color:var(--tinta);transition:transform .1s
+  }
+  .atalho:hover{transform:rotate(-1deg) scale(1.02)}
+  .atalho:active{transform:translate(4px,4px);box-shadow:0 0 0}
+  .atalho .ic{font-size:2.3rem;background:#fff;border:3px solid var(--tinta);border-radius:16px;width:60px;height:60px;display:flex;align-items:center;justify-content:center}
+  .atalho small{display:block;font-size:.95rem;font-weight:600}
+
+  .voltar{background:#fff;border:3px solid var(--tinta);border-radius:14px;font:inherit;font-weight:800;padding:4px 14px;cursor:pointer;box-shadow:3px 3px 0 var(--tinta);margin-bottom:12px}
+
+  .idiomas{display:flex;gap:10px}
+  .idioma{
+    flex:1;font:inherit;font-weight:800;font-size:1.15rem;padding:12px;cursor:pointer;
+    border:4px solid var(--tinta);border-radius:18px;background:#fff;color:var(--tinta)
+  }
+  .idioma.sel.pt{background:var(--pt)}
+  .idioma.sel.en{background:var(--en);color:#fff}
+  .idioma .bandeira{font-size:1.8rem;display:block}
+
+  .contador{display:flex;align-items:center;gap:10px}
+  .contador button{font:inherit;font-weight:800;font-size:1.6rem;width:56px;height:52px;border:4px solid var(--tinta);border-radius:16px;background:var(--amarelo);cursor:pointer}
+  .contador input{text-align:center;font-size:1.6rem;font-weight:800}
+
+  .upload{
+    border:4px dashed var(--tinta);border-radius:20px;background:#fff;padding:14px;text-align:center;cursor:pointer;
+    display:flex;align-items:center;gap:14px;justify-content:center
+  }
+  .upload input{display:none}
+  .capa-preview{width:80px;height:110px;border:3px solid var(--tinta);border-radius:10px;background:#ffe9a8 center/cover;display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0}
+
+  .estante{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px;margin-top:6px}
+  .livro{text-align:center;font-weight:700;font-size:.95rem;line-height:1.1}
+  .livro .capa{width:100%;aspect-ratio:3/4;border:3px solid var(--tinta);border-radius:10px;background:#ffd23f center/cover;display:flex;align-items:center;justify-content:center;font-size:2.4rem;box-shadow:3px 3px 0 var(--tinta);margin-bottom:6px;position:relative}
+  .livro .tag{position:absolute;top:-8px;right:-8px;font-size:1rem;background:#fff;border:2px solid var(--tinta);border-radius:10px;padding:0 5px}
+  .livro small{display:block;font-weight:500;opacity:.8}
+  .livro .pag{font-size:.85rem;color:var(--roxo)}
+  .vazio{text-align:center;padding:10px;font-weight:700;opacity:.75}
+
+  /* quiz */
+  .progresso-quiz{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
+  .progresso-quiz span{width:22px;height:22px;border-radius:50%;border:3px solid var(--tinta);background:#fff}
+  .progresso-quiz span.atual{background:var(--amarelo)}
+  .progresso-quiz span.certa{background:var(--verde)}
+  .progresso-quiz span.errada{background:var(--rosa)}
+  .pergunta{font-size:1.45rem;font-weight:800;text-align:center;margin:6px 0 12px}
+  .opcao{
+    display:block;width:100%;font:inherit;font-weight:700;font-size:1.25rem;padding:12px;margin-bottom:10px;
+    border:4px solid var(--tinta);border-radius:18px;background:#fff;cursor:pointer;color:var(--tinta);
+    box-shadow:4px 4px 0 var(--tinta);text-align:left
+  }
+  .opcao:nth-child(1){background:#fff3c4}.opcao:nth-child(2){background:#d9f1ff}.opcao:nth-child(3){background:#ffe0ee}
+  .opcao.certa{background:var(--verde)!important;animation:pula .5s}
+  .opcao.errada{background:var(--rosa)!important;color:#fff;animation:treme .4s}
+  .opcao:disabled{cursor:default}
+  @keyframes treme{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+  .estrelas{font-size:3rem;text-align:center;letter-spacing:6px}
+
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(150px);
+    background:var(--tinta);color:#fff;font-weight:800;padding:12px 22px;border-radius:20px;
+    transition:transform .3s;z-index:20;font-size:1.1rem;text-align:center;max-width:90%
+  }
+  .toast.mostra{transform:translateX(-50%) translateY(0)}
+  .confete{position:fixed;top:-20px;width:12px;height:18px;z-index:30;pointer-events:none;animation:cai linear forwards}
+  @keyframes cai{to{transform:translateY(110vh) rotate(720deg)}}
+  .usuarios{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .erro{color:#d6246e;font-weight:800;margin-top:8px;min-height:1.2em}
+  textarea{width:100%;font:inherit;font-size:1.15rem;padding:10px 14px;border:3px solid var(--tinta);border-radius:16px;background:#fff;color:var(--tinta);outline:none;min-height:110px;resize:vertical}
+  textarea:focus{box-shadow:0 0 0 4px var(--amarelo)}
+  .livro{cursor:pointer}
+  .tipo-q{display:inline-block;font-size:.9rem;font-weight:800;background:#c9b8ff;border:2px solid var(--tinta);border-radius:10px;padding:0 8px;margin-bottom:6px}
+  .resp{background:#fff;border:3px solid var(--tinta);border-radius:16px;padding:8px 12px;margin-top:8px}
+  .resp small{display:block;opacity:.7;font-weight:700}
+  .resp b{display:block}
+  .q-item{background:#fff;border:3px solid var(--tinta);border-radius:16px;padding:8px 12px;margin-top:8px;display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+  .det-topo{display:flex;gap:14px;align-items:center}
+  .det-topo .capa{width:90px;aspect-ratio:3/4;border:3px solid var(--tinta);border-radius:10px;background:#ffd23f center/cover;display:flex;align-items:center;justify-content:center;font-size:2.4rem;box-shadow:3px 3px 0 var(--tinta);flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- LOGIN -->
+  <section id="tela-login" class="tela ativa">
+    <div class="titulo-logo">📚 Leitura Divertida!</div>
+    <div class="mascote-area">
+      <div class="mascote" id="m-login"></div>
+      <div class="balao">Oi! Eu sou a <b>Lili</b>, a coruja leitora! Vamos ler juntos? 🦉</div>
+    </div>
+    <div class="cartao">
+      <h2>Quem está lendo hoje?</h2>
+      <div id="usuarios-salvos"></div>
+      <label for="login-nome">Seu nome</label>
+      <input type="text" id="login-nome" placeholder="Ex.: Pedro" maxlength="20" autocomplete="off">
+      <label for="login-senha">Senha secreta (4 números)</label>
+      <input type="password" id="login-senha" inputmode="numeric" maxlength="4" placeholder="••••">
+      <label>Escolha seu avatar</label>
+      <div class="avatares" id="avatares"></div>
+      <div class="erro" id="login-erro"></div>
+      <button class="btn rosa" id="btn-entrar">Entrar 🚀</button>
+      <label class="btn branco" for="restaurar-arq" style="font-size:1rem">📂 Trazer histórico de um arquivo</label>
+    </div>
+  </section>
+
+  <!-- PAINEL -->
+  <section id="tela-painel" class="tela">
+    <div class="topo">
+      <div class="ola"><div class="av" id="p-avatar">🦊</div><div><small>Olá,</small><b id="p-nome">Leitor</b></div></div>
+      <div style="display:flex;gap:8px"><button class="btn peq" data-ir="historico">📜 Histórico</button><button class="btn peq branco" id="btn-sair">Sair 👋</button></div>
+    </div>
+    <div class="mascote-area">
+      <div class="mascote" id="m-painel"></div>
+      <div class="balao" id="balao-painel">Que bom te ver!</div>
+    </div>
+    <div class="stats">
+      <div class="stat" style="background:#fff3c4"><b id="s-paginas">0</b><span>páginas no mês</span></div>
+      <div class="stat" style="background:#d9f1ff"><b id="s-livros">0</b><span>livros</span></div>
+      <div class="stat" style="background:#ffe0ee"><b id="s-sequencia">0🔥</b><span>dias seguidos</span></div>
+    </div>
+    <div class="cartao">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 id="titulo-mes" style="margin:0">Meu mês</h2>
+        <button class="btn peq" id="btn-meta">🎯 Meta</button>
+      </div>
+      <div class="meta-barra"><div class="meta-enche" id="meta-enche" style="width:0"></div><div class="meta-txt" id="meta-txt">0 / 300</div></div>
+      <canvas id="grafico"></canvas>
+      <div class="legenda"><span><i style="background:var(--pt)"></i>🇧🇷 Português</span><span><i style="background:var(--en)"></i>🇺🇸 Inglês</span></div>
+    </div>
+    <div class="atalhos">
+      <button class="atalho" style="background:var(--verde)" data-ir="registrar"><span class="ic">📖</span><span>Registrar Leitura<small>Quantas páginas você leu?</small></span></button>
+      <button class="atalho" style="background:var(--amarelo)" data-ir="adicionar"><span class="ic">➕</span><span>Adicionar Livro<small>Coloque um livro na estante</small></span></button>
+      <button class="atalho" style="background:#c9b8ff" data-ir="quiz"><span class="ic">🧠</span><span>Quiz Diário<small id="quiz-status">Você entendeu a história?</small></span></button>
+    </div>
+    <div class="cartao" style="margin-top:18px">
+      <h2>Minha estante 📚</h2>
+      <div class="estante" id="estante"></div>
+    </div>
+  </section>
+
+  <!-- REGISTRAR -->
+  <section id="tela-registrar" class="tela">
+    <button class="voltar" data-ir="painel">⬅ Voltar</button>
+    <div class="mascote-area">
+      <div class="mascote" id="m-registrar"></div>
+      <div class="balao" id="balao-registrar">Conta pra mim: o que você leu hoje?</div>
+    </div>
+    <div class="cartao">
+      <h2>📖 Registrar Leitura</h2>
+      <label for="r-livro">Qual livro?</label>
+      <select id="r-livro"></select>
+      <label>Páginas lidas</label>
+      <div class="contador">
+        <button type="button" id="r-menos">−</button>
+        <input type="number" id="r-paginas" value="5" min="1" max="999">
+        <button type="button" id="r-mais">+</button>
+      </div>
+      <label>Em que idioma?</label>
+      <div class="idiomas">
+        <button type="button" class="idioma pt sel" data-lang="pt"><span class="bandeira">🇧🇷</span>Português</button>
+        <button type="button" class="idioma en" data-lang="en"><span class="bandeira">🇺🇸</span>English</button>
+      </div>
+      <label for="r-data">Quando?</label>
+      <input type="date" id="r-data">
+      <div class="erro" id="r-erro"></div>
+      <button class="btn verde" id="btn-registrar">Salvar leitura ⭐</button>
+    </div>
+  </section>
+
+  <!-- ADICIONAR -->
+  <section id="tela-adicionar" class="tela">
+    <button class="voltar" data-ir="painel">⬅ Voltar</button>
+    <div class="mascote-area">
+      <div class="mascote" id="m-adicionar"></div>
+      <div class="balao" id="balao-adicionar">Oba, livro novo! Qual é?</div>
+    </div>
+    <div class="cartao">
+      <h2>➕ Adicionar Livro</h2>
+      <label for="a-titulo">Título</label>
+      <input type="text" id="a-titulo" maxlength="60" placeholder="Ex.: O Pequeno Príncipe">
+      <label for="a-autor">Autor</label>
+      <input type="text" id="a-autor" maxlength="50" placeholder="Ex.: Antoine de Saint-Exupéry">
+      <label>Idioma do livro</label>
+      <div class="idiomas" id="a-idiomas">
+        <button type="button" class="idioma pt sel" data-lang="pt"><span class="bandeira">🇧🇷</span>Português</button>
+        <button type="button" class="idioma en" data-lang="en"><span class="bandeira">🇺🇸</span>English</button>
+      </div>
+      <label>Capa do livro</label>
+      <label class="upload" for="a-capa">
+        <div class="capa-preview" id="a-preview">📕</div>
+        <div><b>Toque para escolher<br>uma foto da capa</b><br><small>(opcional)</small></div>
+        <input type="file" id="a-capa" accept="image/*">
+      </label>
+      <div class="erro" id="a-erro"></div>
+      <button class="btn" id="btn-adicionar">Colocar na estante 📚</button>
+    </div>
+  </section>
+
+  <!-- HISTÓRICO -->
+  <section id="tela-historico" class="tela">
+    <button class="voltar" data-ir="painel">⬅ Voltar</button>
+    <div class="cartao">
+      <h2>💾 Guardar meu histórico</h2>
+      <p>Salve um arquivo com todos os cadastros (livros, leituras, quizzes e respostas). No iPad, escolha <b>Salvar em Arquivos</b>. Para recuperar em outro aparelho, use “Restaurar”.</p>
+      <p id="hist-backup-info" style="font-weight:700;color:var(--roxo)"></p>
+      <button class="btn verde" id="btn-backup">💾 Salvar histórico em arquivo</button>
+      <button class="btn branco" id="btn-csv">📊 Exportar planilha (Numbers/Excel)</button>
+      <label class="btn branco" for="restaurar-arq">📂 Restaurar de um arquivo</label>
+    </div>
+    <div class="cartao" id="hist-caixa"></div>
+  </section>
+
+  <!-- LIVRO (diário) -->
+  <section id="tela-livro" class="tela">
+    <button class="voltar" data-ir="painel">⬅ Voltar</button>
+    <div class="cartao" id="livro-caixa"></div>
+  </section>
+
+  <!-- PERGUNTAS (área dos pais) -->
+  <section id="tela-pais" class="tela">
+    <button class="voltar" id="pais-voltar">⬅ Voltar</button>
+    <div class="cartao" id="pais-caixa"></div>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="tela-quiz" class="tela">
+    <button class="voltar" data-ir="painel">⬅ Voltar</button>
+    <div class="mascote-area">
+      <div class="mascote" id="m-quiz"></div>
+      <div class="balao" id="balao-quiz">Pronto para o desafio de hoje?</div>
+    </div>
+    <div class="cartao" id="quiz-caixa"></div>
+  </section>
+
+</div>
+<div class="toast" id="toast"></div>
+<input type="file" id="restaurar-arq" accept=".json,application/json" style="display:none">
+
+<script>
+/* ============ MASCOTE (Lili, a coruja) ============ */
+function mascoteSVG(humor){
+  const olhos = {
+    feliz:'<path d="M38 52 q8 -10 16 0" stroke="#2d2250" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M66 52 q8 -10 16 0" stroke="#2d2250" stroke-width="5" fill="none" stroke-linecap="round"/>',
+    uau:'<circle cx="46" cy="52" r="13" fill="#fff" stroke="#2d2250" stroke-width="4"/><circle cx="74" cy="52" r="13" fill="#fff" stroke="#2d2250" stroke-width="4"/><circle cx="46" cy="52" r="7" fill="#2d2250"/><circle cx="74" cy="52" r="7" fill="#2d2250"/><circle cx="49" cy="49" r="2.5" fill="#fff"/><circle cx="77" cy="49" r="2.5" fill="#fff"/>',
+    pensa:'<circle cx="46" cy="52" r="12" fill="#fff" stroke="#2d2250" stroke-width="4"/><circle cx="74" cy="52" r="12" fill="#fff" stroke="#2d2250" stroke-width="4"/><circle cx="50" cy="47" r="5" fill="#2d2250"/><circle cx="78" cy="47" r="5" fill="#2d2250"/>',
+    ops:'<circle cx="46" cy="54" r="11" fill="#fff" stroke="#2d2250" stroke-width="4"/><circle cx="74" cy="54" r="11" fill="#fff" stroke="#2d2250" stroke-width="4"/><circle cx="46" cy="56" r="5" fill="#2d2250"/><circle cx="74" cy="56" r="5" fill="#2d2250"/><path d="M34 38 l18 6 M86 38 l-18 6" stroke="#2d2250" stroke-width="4" stroke-linecap="round"/>'
+  }[humor] || '';
+  const boca = {
+    feliz:'<path d="M54 74 q6 10 12 0 z" fill="#ff5fa2" stroke="#2d2250" stroke-width="3"/>',
+    uau:'<ellipse cx="60" cy="76" rx="6" ry="8" fill="#ff5fa2" stroke="#2d2250" stroke-width="3"/>',
+    pensa:'<path d="M54 76 q6 -3 12 0" stroke="#2d2250" stroke-width="3" fill="none" stroke-linecap="round"/>',
+    ops:'<path d="M53 80 q7 -8 14 0" stroke="#2d2250" stroke-width="3" fill="none" stroke-linecap="round"/>'
+  }[humor] || '';
+  const extra = humor==='pensa' ? '<text x="92" y="22" font-size="22" font-weight="800" fill="#2d2250">?</text>'
+    : humor==='uau' ? '<text x="88" y="24" font-size="20">✨</text>'
+    : humor==='ops' ? '<path d="M92 40 q4 8 0 12 q-4 -4 0 -12z" fill="#3ab4ff" stroke="#2d2250" stroke-width="2"/>' : '';
+  return `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="60" cy="134" rx="34" ry="5" fill="#2d2250" opacity=".2"/>
+    <path d="M26 30 L34 6 L46 24 Z" fill="#7b5cff" stroke="#2d2250" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M94 30 L86 6 L74 24 Z" fill="#7b5cff" stroke="#2d2250" stroke-width="4" stroke-linejoin="round"/>
+    <ellipse cx="60" cy="78" rx="44" ry="52" fill="#9d84ff" stroke="#2d2250" stroke-width="4"/>
+    <ellipse cx="60" cy="96" rx="27" ry="30" fill="#ffe7b0" stroke="#2d2250" stroke-width="3"/>
+    <path d="M48 92 q4 4 8 0 M64 92 q4 4 8 0 M56 104 q4 4 8 0" stroke="#e8b960" stroke-width="3" fill="none"/>
+    <path d="M16 78 q-10 22 8 40 q6 -18 4 -36z" fill="#7b5cff" stroke="#2d2250" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M104 78 q10 22 -8 40 q-6 -18 -4 -36z" fill="#7b5cff" stroke="#2d2250" stroke-width="4" stroke-linejoin="round"/>
+    <circle cx="46" cy="52" r="18" fill="#ffd23f" stroke="#2d2250" stroke-width="4"/>
+    <circle cx="74" cy="52" r="18" fill="#ffd23f" stroke="#2d2250" stroke-width="4"/>
+    <line x1="64" y1="52" x2="56" y2="52" stroke="#2d2250" stroke-width="4"/>
+    ${olhos}
+    <path d="M55 64 L65 64 L60 72 Z" fill="#ff8c42" stroke="#2d2250" stroke-width="3" stroke-linejoin="round"/>
+    ${boca}
+    <circle cx="30" cy="70" r="5" fill="#ff86ba" opacity=".8"/><circle cx="90" cy="70" r="5" fill="#ff86ba" opacity=".8"/>
+    <rect x="34" y="112" width="52" height="18" rx="3" fill="#ff5fa2" stroke="#2d2250" stroke-width="4"/>
+    <line x1="60" y1="112" x2="60" y2="130" stroke="#2d2250" stroke-width="3"/>
+    <path d="M44 128 l-4 8 M76 128 l4 8 M52 130 l0 7 M68 130 l0 7" stroke="#ff8c42" stroke-width="4" stroke-linecap="round"/>
+    ${extra}
+  </svg>`;
+}
+function mascote(id, humor, pular){
+  const el = document.getElementById(id);
+  el.innerHTML = mascoteSVG(humor);
+  if(pular){ el.classList.remove('pula'); void el.offsetWidth; el.classList.add('pula'); setTimeout(()=>el.classList.remove('pula'),1300); }
+}
+
+/* ============ DADOS ============ */
+const CHAVE = 'leituraDivertida_v1';
+const AVATARES = ['🦊','🐼','🦁','🐸','🐙','🦄','🐯','🐶','🐱','🚀','⚽','🦖'];
+let banco = JSON.parse(localStorage.getItem(CHAVE) || '{"usuarios":{},"ultimo":null}');
+let atual = null; // nome do usuario
+let avatarSel = AVATARES[0];
+let langRegistro = 'pt', langLivro = 'pt', capaDataURL = null;
+
+function salvar(){ localStorage.setItem(CHAVE, JSON.stringify(banco)); }
+function u(){ return banco.usuarios[atual]; }
+function hojeISO(d=new Date()){ const z=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate()); }
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function id(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('mostra'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('mostra'),2200); }
+function confete(){
+  const cores=['#ff5fa2','#ffd23f','#3ddc97','#3ab4ff','#7b5cff','#ff8c42'];
+  for(let i=0;i<60;i++){
+    const c=document.createElement('div'); c.className='confete';
+    c.style.left=Math.random()*100+'vw'; c.style.background=cores[i%cores.length];
+    c.style.animationDuration=(1.6+Math.random()*1.6)+'s'; c.style.animationDelay=(Math.random()*.4)+'s';
+    c.style.borderRadius = Math.random()>.5?'50%':'3px';
+    document.body.appendChild(c); setTimeout(()=>c.remove(),3800);
+  }
+}
+
+/* ============ NAVEGAÇÃO ============ */
+function ir(tela){
+  document.querySelectorAll('.tela').forEach(t=>t.classList.remove('ativa'));
+  document.getElementById('tela-'+tela).classList.add('ativa');
+  window.scrollTo(0,0);
+  if(tela==='painel') montarPainel();
+  if(tela==='registrar') montarRegistrar();
+  if(tela==='adicionar') montarAdicionar();
+  if(tela==='quiz') montarQuiz();
+  if(tela==='historico') montarHistorico();
+}
+document.querySelectorAll('[data-ir]').forEach(b=>b.addEventListener('click',()=>ir(b.dataset.ir)));
+
+/* ============ LOGIN ============ */
+function montarLogin(){
+  mascote('m-login','feliz');
+  const av=document.getElementById('avatares'); av.innerHTML='';
+  AVATARES.forEach(a=>{
+    const b=document.createElement('button'); b.className='avatar'+(a===avatarSel?' sel':''); b.textContent=a; b.type='button';
+    b.onclick=()=>{avatarSel=a; montarLogin();}; av.appendChild(b);
+  });
+  const nomes=Object.keys(banco.usuarios), box=document.getElementById('usuarios-salvos');
+  box.innerHTML = nomes.length ? '<small><b>Já tenho conta:</b></small><div class="usuarios">'+nomes.map(n=>
+    `<button class="btn peq branco" data-nome="${esc(n)}">${banco.usuarios[n].avatar} ${esc(n)}</button>`).join('')+'</div>' : '';
+  box.querySelectorAll('[data-nome]').forEach(b=>b.onclick=()=>{
+    document.getElementById('login-nome').value=b.dataset.nome;
+    avatarSel=banco.usuarios[b.dataset.nome].avatar; montarLogin();
+    document.getElementById('login-senha').focus();
+  });
+}
+document.getElementById('btn-entrar').onclick=()=>{
+  const nome=document.getElementById('login-nome').value.trim();
+  const senha=document.getElementById('login-senha').value.trim();
+  const erro=document.getElementById('login-erro');
+  if(!nome){ erro.textContent='Escreva seu nome! ✏️'; mascote('m-login','ops',true); return; }
+  if(!/^\d{4}$/.test(senha)){ erro.textContent='A senha precisa ter 4 números 🔢'; mascote('m-login','ops',true); return; }
+  const existente=banco.usuarios[nome];
+  if(existente){
+    if(existente.senha!==senha){ erro.textContent='Hmm, senha errada. Tente de novo! 🙈'; mascote('m-login','ops',true); return; }
+    existente.avatar=avatarSel;
+  } else {
+    banco.usuarios[nome]={senha, avatar:avatarSel, meta:300, livros:[], leituras:[], quiz:{}};
+  }
+  atual=nome; banco.ultimo=nome; salvar();
+  erro.textContent=''; document.getElementById('login-senha').value='';
+  ir('painel');
+};
+document.getElementById('login-senha').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('btn-entrar').click(); });
+document.getElementById('btn-sair').onclick=()=>{ atual=null; paisLiberado=false; montarLogin(); ir('login'); };
+
+/* ============ PAINEL ============ */
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function leiturasDoMes(){
+  const p=hojeISO().slice(0,7);
+  return u().leituras.filter(l=>l.data.startsWith(p));
+}
+function sequencia(){
+  const dias=new Set(u().leituras.map(l=>l.data)); let n=0; const d=new Date();
+  if(!dias.has(hojeISO(d))) d.setDate(d.getDate()-1);
+  while(dias.has(hojeISO(d))){ n++; d.setDate(d.getDate()-1); }
+  return n;
+}
+function montarPainel(){
+  const user=u();
+  document.getElementById('p-nome').textContent=atual;
+  document.getElementById('p-avatar').textContent=user.avatar;
+  const mes=leiturasDoMes(), total=mes.reduce((s,l)=>s+l.paginas,0), seq=sequencia();
+  document.getElementById('s-paginas').textContent=total;
+  document.getElementById('s-livros').textContent=user.livros.length;
+  document.getElementById('s-sequencia').textContent=seq+'🔥';
+  document.getElementById('titulo-mes').textContent='Meu '+MESES[new Date().getMonth()]+' 📅';
+  const pct=Math.min(100,Math.round(total/user.meta*100));
+  document.getElementById('meta-enche').style.width=pct+'%';
+  document.getElementById('meta-txt').textContent=`${total} / ${user.meta} páginas (${pct}%)`;
+  const feitoQuiz=user.quiz[hojeISO()];
+  document.getElementById('quiz-status').textContent= feitoQuiz ? `Feito hoje: ${feitoQuiz.acertos}/3 ⭐` : 'Você entendeu a história?';
+
+  let frase, humor='feliz';
+  if(!user.livros.length){ frase='Vamos começar colocando seu primeiro livro na estante! 📚'; humor='uau'; }
+  else if(pct>=100){ frase='UAU! Você bateu a meta do mês! Você é um super leitor! 🏆'; humor='uau'; }
+  else if(seq>=3){ frase=`${seq} dias seguidos lendo! Não deixa o fogo apagar! 🔥`; humor='uau'; }
+  else if(user.leituras.length && (!banco.ultimoBackup || (Date.now()-new Date(banco.ultimoBackup))/864e5>7)){ frase='Psiu! Faz tempo que você não salva seu histórico. Toque em 📜 Histórico! 💾'; humor='pensa'; }
+  else if(!feitoQuiz){ frase='Já fez o Quiz Diário? Tenho 3 perguntas pra você! 🧠'; humor='pensa'; }
+  else { frase=['Cada página é uma aventura nova!','Ler em inglês e português é um superpoder! 💪','Que tal ler mais um pouquinho hoje?'][new Date().getDate()%3]; }
+  document.getElementById('balao-painel').textContent=frase;
+  mascote('m-painel',humor);
+  desenharGrafico(mes);
+  montarEstante();
+}
+function desenharGrafico(mes){
+  const cv=document.getElementById('grafico'), dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth, H=cv.clientHeight; cv.width=W*dpr; cv.height=H*dpr;
+  const g=cv.getContext('2d'); g.scale(dpr,dpr); g.clearRect(0,0,W,H);
+  const hoje=new Date(), diasMes=new Date(hoje.getFullYear(),hoje.getMonth()+1,0).getDate();
+  const pt=Array(diasMes).fill(0), en=Array(diasMes).fill(0);
+  mes.forEach(l=>{ const d=+l.data.slice(8,10)-1; (l.idioma==='en'?en:pt)[d]+=l.paginas; });
+  const max=Math.max(10,...pt.map((v,i)=>v+en[i]));
+  const esq=28, base=H-22, topo=10, larg=(W-esq-4)/diasMes;
+  g.font='bold 11px "Baloo 2",sans-serif'; g.fillStyle='#2d2250'; g.strokeStyle='rgba(45,34,80,.15)'; g.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=base-(base-topo)*i/4; g.beginPath(); g.moveTo(esq,y); g.lineTo(W,y); g.stroke();
+    g.fillText(Math.round(max*i/4), 0, y+4);
+  }
+  function barra(x,y,w,h,cor){
+    if(h<=0) return; const r=Math.min(5,w/2,h/2);
+    g.fillStyle=cor; g.strokeStyle='#2d2250'; g.lineWidth=2;
+    g.beginPath(); g.moveTo(x,y+h); g.lineTo(x,y+r); g.quadraticCurveTo(x,y,x+r,y); g.lineTo(x+w-r,y);
+    g.quadraticCurveTo(x+w,y,x+w,y+r); g.lineTo(x+w,y+h); g.closePath(); g.fill(); g.stroke();
+  }
+  for(let i=0;i<diasMes;i++){
+    const x=esq+i*larg+larg*.15, w=larg*.7;
+    const hp=(base-topo)*pt[i]/max, he=(base-topo)*en[i]/max;
+    barra(x,base-hp,w,hp,'#3ddc97'); barra(x,base-hp-he,w,he,'#3ab4ff');
+    if(i===hoje.getDate()-1){ g.fillStyle='#ff5fa2'; g.beginPath(); g.arc(x+w/2,base+8,4,0,7); g.fill(); }
+    if((i+1)%5===0||i===0){ g.fillStyle='#2d2250'; g.textAlign='center'; g.fillText(i+1,x+w/2,H-2); g.textAlign='left'; }
+  }
+  g.strokeStyle='#2d2250'; g.lineWidth=3; g.beginPath(); g.moveTo(esq,base); g.lineTo(W,base); g.stroke();
+}
+function paginasDoLivro(idl){ return u().leituras.filter(l=>l.livro===idl).reduce((s,l)=>s+l.paginas,0); }
+function montarEstante(){
+  const est=document.getElementById('estante'), livros=u().livros;
+  if(!livros.length){ est.innerHTML='<div class="vazio" style="grid-column:1/-1">Sua estante está vazia. Adicione um livro! 🙂</div>'; return; }
+  const cores=['#ffd23f','#ff8c42','#3ddc97','#3ab4ff','#ff5fa2','#c9b8ff'];
+  est.innerHTML=livros.map((l,i)=>`
+    <div class="livro" data-livro="${l.id}">
+      <div class="capa" style="${l.capa?`background-image:url(${l.capa})`:`background-color:${cores[i%cores.length]}`}">
+        ${l.capa?'':'📘'}<span class="tag">${l.idioma==='en'?'🇺🇸':'🇧🇷'}</span>
+      </div>
+      ${esc(l.titulo)}<small>${esc(l.autor)}</small><span class="pag">${paginasDoLivro(l.id)} págs lidas</span>
+    </div>`).join('');
+  est.querySelectorAll('[data-livro]').forEach(d=>d.onclick=()=>abrirLivro(d.dataset.livro));
+}
+document.getElementById('btn-meta').onclick=()=>{
+  const v=prompt('Quantas páginas você quer ler este mês? 🎯', u().meta);
+  const n=parseInt(v,10);
+  if(n>0 && n<10000){ u().meta=n; salvar(); montarPainel(); toast('Meta nova: '+n+' páginas! 💪'); }
+};
+
+/* ============ REGISTRAR ============ */
+function marcarIdioma(grupo, lang){
+  grupo.querySelectorAll('.idioma').forEach(b=>b.classList.toggle('sel', b.dataset.lang===lang));
+}
+function montarRegistrar(){
+  const sel=document.getElementById('r-livro'), livros=u().livros;
+  document.getElementById('r-erro').textContent='';
+  document.getElementById('r-data').value=hojeISO();
+  document.getElementById('r-data').max=hojeISO();
+  if(!livros.length){
+    sel.innerHTML='<option value="">Nenhum livro ainda</option>';
+    document.getElementById('balao-registrar').textContent='Primeiro adicione um livro na estante, tá? 📚';
+    mascote('m-registrar','pensa'); return;
+  }
+  sel.innerHTML=livros.map(l=>`<option value="${l.id}">${l.idioma==='en'?'🇺🇸':'🇧🇷'} ${esc(l.titulo)}</option>`).join('');
+  langRegistro=livros[0].idioma; marcarIdioma(document.getElementById('tela-registrar'),langRegistro);
+  document.getElementById('balao-registrar').textContent='Conta pra mim: o que você leu hoje?';
+  mascote('m-registrar','feliz');
+}
+document.getElementById('r-livro').onchange=e=>{
+  const l=u().livros.find(x=>x.id===e.target.value);
+  if(l){ langRegistro=l.idioma; marcarIdioma(document.getElementById('tela-registrar'),langRegistro); }
+};
+document.querySelectorAll('#tela-registrar .idioma').forEach(b=>b.onclick=()=>{ langRegistro=b.dataset.lang; marcarIdioma(document.getElementById('tela-registrar'),langRegistro); });
+const rp=document.getElementById('r-paginas');
+document.getElementById('r-menos').onclick=()=>rp.value=Math.max(1,(+rp.value||1)-1);
+document.getElementById('r-mais').onclick=()=>rp.value=Math.min(999,(+rp.value||0)+1);
+document.getElementById('btn-registrar').onclick=()=>{
+  const livro=document.getElementById('r-livro').value, pag=parseInt(rp.value,10), data=document.getElementById('r-data').value||hojeISO();
+  const erro=document.getElementById('r-erro');
+  if(!livro){ ir('adicionar'); return; }
+  if(!(pag>0 && pag<1000)){ erro.textContent='Coloque um número de páginas entre 1 e 999 🔢'; mascote('m-registrar','ops',true); return; }
+  u().leituras.push({id:id(), livro, paginas:pag, idioma:langRegistro, data}); salvar();
+  erro.textContent='';
+  const frases = langRegistro==='en'
+    ? [`Awesome! ${pag} pages in English! 🇺🇸`, `Great job! You read ${pag} pages! 🌟`]
+    : [`Incrível! ${pag} páginas lidas! 🎉`, `Muito bem! Mais ${pag} páginas de aventura! 🚀`];
+  document.getElementById('balao-registrar').textContent=frases[pag%2];
+  mascote('m-registrar','uau',true); confete(); toast('Leitura salva! ⭐');
+  setTimeout(()=>ir('painel'),1800);
+};
+
+/* ============ ADICIONAR ============ */
+function montarAdicionar(){
+  ['a-titulo','a-autor'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('a-capa').value=''; capaDataURL=null; langLivro='pt';
+  const pv=document.getElementById('a-preview'); pv.style.backgroundImage=''; pv.textContent='📕';
+  marcarIdioma(document.getElementById('a-idiomas'),'pt');
+  document.getElementById('a-erro').textContent='';
+  document.getElementById('balao-adicionar').textContent='Oba, livro novo! Qual é?';
+  mascote('m-adicionar','uau');
+}
+document.querySelectorAll('#a-idiomas .idioma').forEach(b=>b.onclick=()=>{ langLivro=b.dataset.lang; marcarIdioma(document.getElementById('a-idiomas'),langLivro); });
+document.getElementById('a-capa').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const leitor=new FileReader();
+  leitor.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{ // reduz a imagem para caber no armazenamento do navegador
+      const larg=240, alt=Math.round(img.height*larg/img.width);
+      const c=document.createElement('canvas'); c.width=larg; c.height=alt;
+      c.getContext('2d').drawImage(img,0,0,larg,alt);
+      capaDataURL=c.toDataURL('image/jpeg',.72);
+      const pv=document.getElementById('a-preview'); pv.style.backgroundImage=`url(${capaDataURL})`; pv.textContent='';
+      document.getElementById('balao-adicionar').textContent='Que capa linda! 😍';
+      mascote('m-adicionar','feliz',true);
+    };
+    img.src=leitor.result;
+  };
+  leitor.readAsDataURL(f);
+};
+document.getElementById('btn-adicionar').onclick=()=>{
+  const titulo=document.getElementById('a-titulo').value.trim(), autor=document.getElementById('a-autor').value.trim();
+  const erro=document.getElementById('a-erro');
+  if(!titulo){ erro.textContent='Qual é o título do livro? ✏️'; mascote('m-adicionar','ops',true); return; }
+  if(!autor){ erro.textContent='Quem escreveu o livro? ✏️'; mascote('m-adicionar','ops',true); return; }
+  u().livros.push({id:id(), titulo, autor, idioma:langLivro, capa:capaDataURL, criado:hojeISO()});
+  try{ salvar(); }catch(err){ u().livros.pop(); erro.textContent='A estante ficou cheia! Tente uma foto menor.'; return; }
+  document.getElementById('balao-adicionar').textContent=`"${titulo}" está na estante! Bora ler? 📚`;
+  mascote('m-adicionar','uau',true); confete(); toast('Livro adicionado! 📚');
+  setTimeout(()=>ir('painel'),1800);
+};
+
+/* ============ QUIZ DIÁRIO: você entendeu a história? ============ */
+// Perguntas de compreensão. Para livros em inglês, a pergunta vem em inglês com a tradução.
+const COMPREENSAO = {
+  quem: [
+    {pt:'Quem são os personagens que apareceram na parte que você leu?', en:'Who were the characters in the part you read?'},
+    {pt:'Onde a história aconteceu? Como era esse lugar?', en:'Where did the story happen? What was the place like?'}
+  ],
+  oque: [
+    {pt:'O que aconteceu de mais importante na parte que você leu?', en:'What was the most important thing that happened?'},
+    {pt:'Algum personagem teve um problema? Qual foi? Ele conseguiu resolver?', en:'Did a character have a problem? What was it? Did they solve it?'},
+    {pt:'Conte o que aconteceu com suas palavras, como se contasse para um amigo.', en:'Tell what happened in your own words, like telling a friend.'}
+  ],
+  porque: [
+    {pt:'Como o personagem principal se sentiu? Por quê?', en:'How did the main character feel? Why?'},
+    {pt:'O que você acha que vai acontecer depois? Por quê?', en:'What do you think will happen next? Why?'},
+    {pt:'Se você estivesse na história, o que faria diferente?', en:'If you were in the story, what would you do differently?'}
+  ]
+};
+const TRAD = {
+  'Who were the characters in the part you read?':'Quem eram os personagens?',
+  'Where did the story happen? What was the place like?':'Onde a história aconteceu?',
+  'What was the most important thing that happened?':'O que aconteceu de mais importante?',
+  'Did a character have a problem? What was it? Did they solve it?':'Algum personagem teve um problema?',
+  'Tell what happened in your own words, like telling a friend.':'Conte com suas palavras.',
+  'How did the main character feel? Why?':'Como o personagem se sentiu? Por quê?',
+  'What do you think will happen next? Why?':'O que vai acontecer depois?',
+  'If you were in the story, what would you do differently?':'O que você faria diferente?'
+};
+let quiz=null;
+function seedDoDia(extra){
+  let seed=hojeISO().split('-').join('')*1 + atual.length*7 + (extra||0);
+  return ()=>{ seed=(seed*9301+49297)%233280; return seed/233280; };
+}
+function livroMaisRecente(){
+  const ls=[...u().leituras].sort((a,b)=>a.data<b.data?1:-1);
+  const lv=ls.length && u().livros.find(l=>l.id===ls[0].livro);
+  return lv || u().livros[u().livros.length-1];
+}
+function montarQuiz(){
+  const feito=u().quiz[hojeISO()];
+  if(feito){ mostrarResultado(feito.acertos,true,feito.livro); return; }
+  const livros=u().livros, cx=document.getElementById('quiz-caixa');
+  if(!livros.length){
+    document.getElementById('balao-quiz').textContent='Primeiro coloque um livro na estante e leia um pouquinho! 📚';
+    mascote('m-quiz','pensa');
+    cx.innerHTML='<button class="btn" id="q-add">Adicionar livro ➕</button>';
+    document.getElementById('q-add').onclick=()=>ir('adicionar'); return;
+  }
+  const rec=livroMaisRecente();
+  document.getElementById('balao-quiz').textContent='Vamos ver se você entendeu a história? Escolha o livro que leu! 🤓';
+  mascote('m-quiz','pensa');
+  cx.innerHTML=`<h2>🧠 Você entendeu a história?</h2>
+    <label for="q-livro">Sobre qual livro?</label>
+    <select id="q-livro">${livros.map(l=>`<option value="${l.id}" ${l.id===rec.id?'selected':''}>${l.idioma==='en'?'🇺🇸':'🇧🇷'} ${esc(l.titulo)}</option>`).join('')}</select>
+    <button class="btn azul" id="q-comecar">Começar 🚀</button>`;
+  document.getElementById('q-comecar').onclick=()=>iniciarQuiz(document.getElementById('q-livro').value);
+}
+function iniciarQuiz(livroId){
+  const livro=u().livros.find(l=>l.id===livroId), rnd=seedDoDia(livroId.length);
+  const lista=[];
+  // 1) perguntas de múltipla escolha criadas pelos pais para este livro
+  const mc=[...(livro.perguntas||[])];
+  for(let i=mc.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [mc[i],mc[j]]=[mc[j],mc[i]]; }
+  mc.slice(0,3).forEach(q=>lista.push({tipo:'escolha',...q}));
+  // 2) completa com perguntas abertas de compreensão (quem/onde, o quê, por quê)
+  ['quem','oque','porque'].forEach(g=>{
+    if(lista.length>=3) return;
+    const op=COMPREENSAO[g][Math.floor(rnd()*COMPREENSAO[g].length)];
+    lista.push({tipo:'aberta', p: livro.idioma==='en'?op.en:op.pt, trad: livro.idioma==='en'?TRAD[op.en]:''});
+  });
+  quiz={livro, lista, n:0, acertos:0, marcas:[], tentativa:0};
+  document.getElementById('balao-quiz').textContent=`Vamos falar sobre "${livro.titulo}"! Pense no que você leu. 💭`;
+  mostrarPergunta();
+}
+function bolinhas(){
+  return '<div class="progresso-quiz">'+[0,1,2].map(i=>`<span class="${quiz.marcas[i]||(i===quiz.n?'atual':'')}"></span>`).join('')+'</div>';
+}
+function mostrarPergunta(){
+  const q=quiz.lista[quiz.n], cx=document.getElementById('quiz-caixa'); quiz.tentativa=0;
+  mascote('m-quiz','pensa');
+  const cab=`${bolinhas()}<h2 style="text-align:center">Pergunta ${quiz.n+1} de 3</h2>`;
+  if(q.tipo==='escolha'){
+    cx.innerHTML=`${cab}<div style="text-align:center"><span class="tipo-q">📘 Sobre a história</span></div>
+      <div class="pergunta">${esc(q.p)}</div>
+      <div id="opcoes">${q.o.map((t,i)=>`<button class="opcao" data-i="${i}">${['🅰️','🅱️','©️'][i]} ${esc(t)}</button>`).join('')}</div>
+      <div id="quiz-prox"></div>`;
+    cx.querySelectorAll('.opcao').forEach(b=>b.onclick=()=>responderEscolha(+b.dataset.i));
+  } else {
+    cx.innerHTML=`${cab}<div style="text-align:center"><span class="tipo-q">✍️ Com suas palavras</span></div>
+      <div class="pergunta">${esc(q.p)}${q.trad?`<br><small style="font-weight:600">(${esc(q.trad)})</small>`:''}</div>
+      <textarea id="q-resp" placeholder="Escreva aqui... (pode ser em português ou inglês)"></textarea>
+      <button class="btn verde" id="q-enviar">Responder ✅</button>
+      <div id="quiz-prox"></div>`;
+    document.getElementById('q-enviar').onclick=responderAberta;
+  }
+}
+function botaoProxima(){
+  const ultima=quiz.n===2;
+  document.getElementById('quiz-prox').innerHTML=`<button class="btn azul">${ultima?'Ver resultado 🏆':'Próxima pergunta ➡️'}</button>`;
+  document.querySelector('#quiz-prox .btn').onclick=()=>{
+    if(ultima){ u().quiz[hojeISO()]={acertos:quiz.acertos, livro:quiz.livro.id}; salvar(); mostrarResultado(quiz.acertos,false,quiz.livro.id); }
+    else { quiz.n++; document.getElementById('balao-quiz').textContent='Próxima! Pense com calma na história... 🤔'; mostrarPergunta(); }
+  };
+}
+function responderEscolha(i){
+  const q=quiz.lista[quiz.n], botoes=document.querySelectorAll('#opcoes .opcao');
+  botoes.forEach(b=>b.disabled=true); botoes[q.c].classList.add('certa');
+  const balao=document.getElementById('balao-quiz');
+  if(i===q.c){
+    quiz.acertos++; quiz.marcas[quiz.n]='certa';
+    balao.textContent=['Acertou! Você prestou atenção na história! 🎉','Isso aí! Leu com atenção! ⭐','Correto! Você entendeu direitinho! 🧠'][quiz.n];
+    mascote('m-quiz','uau',true);
+  } else {
+    botoes[i].classList.add('errada'); quiz.marcas[quiz.n]='errada';
+    balao.textContent=`Quase! A resposta é "${q.o[q.c]}". Que tal reler essa parte depois? 📖`;
+    mascote('m-quiz','ops',true);
+  }
+  botaoProxima();
+}
+function responderAberta(){
+  const ta=document.getElementById('q-resp'), txt=ta.value.trim(), q=quiz.lista[quiz.n];
+  const palavras=txt.split(/\s+/).filter(Boolean).length, balao=document.getElementById('balao-quiz');
+  if(!palavras){ balao.textContent='Escreve alguma coisa pra mim, vai! ✏️'; mascote('m-quiz','ops',true); return; }
+  if(palavras<5 && quiz.tentativa===0){
+    quiz.tentativa++;
+    balao.textContent='Gostei! Conta um pouquinho mais? Quem? O quê? Por quê? 🔍';
+    mascote('m-quiz','pensa',true); ta.focus(); return;
+  }
+  // guarda a resposta no diário do livro (os pais podem ler depois)
+  u().respostas=u().respostas||[];
+  u().respostas.push({data:hojeISO(), livro:quiz.livro.id, p:q.p, r:txt}); salvar();
+  ta.disabled=true; document.getElementById('q-enviar').remove();
+  if(palavras>=5){ quiz.acertos++; quiz.marcas[quiz.n]='certa'; }
+  else quiz.marcas[quiz.n]='errada';
+  const elogios=['Que resposta caprichada! Dá pra ver que você entendeu! 🌟','Muito bem explicado! Você é um ótimo leitor! 📚','Adorei! Você pensou de verdade na história! 💜'];
+  balao.textContent = palavras>=5 ? elogios[quiz.n] : 'Obrigada! Da próxima vez tenta escrever um pouquinho mais, tá? 😉';
+  mascote('m-quiz', palavras>=5?'uau':'feliz', true);
+  botaoProxima();
+}
+function mostrarResultado(ac, jaFeito, livroId){
+  const livro=u().livros.find(l=>l.id===livroId);
+  const msgs=['Essa história tem muita coisa! Que tal reler um pedacinho e tentar amanhã? 💜','Boa! Você lembrou de uma parte. Amanhã vai ser melhor! 🌱','Muito bem! Você entendeu quase tudo! 🌟','PERFEITO! Você entendeu a história de verdade! 🏆'];
+  document.getElementById('balao-quiz').textContent = jaFeito ? 'Você já fez o quiz de hoje! Leia mais um pouco e volte amanhã. 🌙' : msgs[ac];
+  mascote('m-quiz', ac>=2?'uau':(ac===1?'feliz':'ops'), !jaFeito);
+  if(!jaFeito && ac===3) confete();
+  document.getElementById('quiz-caixa').innerHTML=`
+    <h2 style="text-align:center">Resultado de hoje</h2>
+    ${livro?`<p style="text-align:center;font-weight:700">📘 ${esc(livro.titulo)}</p>`:''}
+    <div class="estrelas">${'⭐'.repeat(ac)}${'☆'.repeat(3-ac)}</div>
+    <p style="text-align:center;font-size:1.3rem;font-weight:800">${ac} de 3 estrelas</p>
+    <p style="text-align:center">Suas respostas ficam guardadas no diário do livro. ✍️</p>
+    ${livro?'<button class="btn branco" data-l="1">Ver diário do livro 📖</button>':''}
+    <button class="btn verde" data-v="1">Voltar ao painel 🏠</button>`;
+  document.querySelector('#quiz-caixa [data-v]').onclick=()=>ir('painel');
+  const bl=document.querySelector('#quiz-caixa [data-l]'); if(bl) bl.onclick=()=>abrirLivro(livro.id);
+}
+
+/* ============ HISTÓRICO + BACKUP EM ARQUIVO ============ */
+function fmtData(iso){ return iso ? iso.split('-').reverse().join('/') : '—'; }
+function eventosHistorico(){
+  const user=u(), nomeLivro=idl=>{ const l=user.livros.find(x=>x.id===idl); return l?l.titulo:'(livro apagado)'; };
+  const ev=[];
+  user.livros.forEach(l=>ev.push({data:l.criado||'', tipo:'livro', ic:'➕', txt:`Livro adicionado: ${l.titulo}`, det:`${l.autor} · ${l.idioma==='en'?'Inglês':'Português'}`}));
+  user.leituras.forEach(l=>ev.push({data:l.data, tipo:'leitura', ic:'📖', txt:`${l.paginas} páginas de ${nomeLivro(l.livro)}`, det:l.idioma==='en'?'Inglês 🇺🇸':'Português 🇧🇷', id:l.id}));
+  Object.entries(user.quiz||{}).forEach(([d,q])=>ev.push({data:d, tipo:'quiz', ic:'🧠', txt:`Quiz: ${q.acertos} de 3 estrelas`, det:q.livro?nomeLivro(q.livro):''}));
+  (user.respostas||[]).forEach(r=>ev.push({data:r.data, tipo:'resposta', ic:'✍️', txt:r.p, det:`${nomeLivro(r.livro)}: “${r.r}”`}));
+  const ordem={livro:0,leitura:1,quiz:2,resposta:3};
+  return ev.sort((a,b)=> a.data===b.data ? ordem[b.tipo]-ordem[a.tipo] : (a.data<b.data?1:-1));
+}
+let filtroHist='todos';
+function montarHistorico(){
+  const todos=eventosHistorico(), ev=filtroHist==='todos'?todos:todos.filter(e=>e.tipo===filtroHist);
+  const user=u(), totalPag=user.leituras.reduce((s,l)=>s+l.paginas,0);
+  const ult=banco.ultimoBackup;
+  const filtros=[['todos','Tudo'],['leitura','📖 Leituras'],['livro','➕ Livros'],['quiz','🧠 Quiz'],['resposta','✍️ Respostas']];
+  let html=`<h2>📜 Histórico de ${esc(atual)}</h2>
+    <p><b>${user.leituras.length}</b> leituras · <b>${totalPag}</b> páginas · <b>${user.livros.length}</b> livros · <b>${Object.keys(user.quiz||{}).length}</b> quizzes</p>
+    <div class="usuarios">${filtros.map(([k,t])=>`<button class="btn peq ${k===filtroHist?'':'branco'}" data-f="${k}">${t}</button>`).join('')}</div>`;
+  let diaAtual=null;
+  if(!ev.length) html+='<div class="vazio">Nada por aqui ainda.</div>';
+  ev.forEach(e=>{
+    if(e.data!==diaAtual){ diaAtual=e.data; html+=`<h3 style="margin-top:14px">📅 ${fmtData(e.data)}</h3>`; }
+    html+=`<div class="q-item"><div>${e.ic} <b>${esc(e.txt)}</b><br><small>${esc(e.det)}</small></div>${e.tipo==='leitura'?`<button class="btn peq branco" data-del="${e.id}" title="Apagar">🗑️</button>`:''}</div>`;
+  });
+  document.getElementById('hist-caixa').innerHTML=html;
+  document.getElementById('hist-backup-info').textContent = ult ? `Último arquivo salvo: ${fmtData(ult)}` : 'Você ainda não salvou nenhum arquivo de histórico.';
+  document.querySelectorAll('#hist-caixa [data-f]').forEach(b=>b.onclick=()=>{ filtroHist=b.dataset.f; montarHistorico(); });
+  document.querySelectorAll('#hist-caixa [data-del]').forEach(b=>b.onclick=()=>{
+    if(!confirm('Apagar esta leitura do histórico?')) return;
+    user.leituras=user.leituras.filter(l=>l.id!==b.dataset.del); salvar(); montarHistorico(); toast('Leitura apagada');
+  });
+}
+async function entregarArquivo(nome, conteudo, tipo){
+  const blob=new Blob([conteudo],{type:tipo});
+  // No iPad/iPhone abre o menu Compartilhar → "Salvar em Arquivos"
+  try{
+    const arq=new File([blob],nome,{type:tipo});
+    if(navigator.canShare && navigator.canShare({files:[arq]})){ await navigator.share({files:[arq], title:nome}); return true; }
+  }catch(e){ if(e && e.name==='AbortError') return false; }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500);
+  return true;
+}
+document.getElementById('btn-backup').onclick=async()=>{
+  const ok=await entregarArquivo(`historico-leitura-${hojeISO()}.json`, JSON.stringify({app:'leituraDivertida', versao:1, salvoEm:new Date().toISOString(), dados:banco}), 'application/json');
+  if(ok){ banco.ultimoBackup=hojeISO(); salvar(); montarHistorico(); toast('Histórico salvo em arquivo! 💾'); }
+};
+document.getElementById('btn-csv').onclick=()=>{
+  const linhas=[['Criança','Data','Tipo','Registro','Detalhe']];
+  Object.keys(banco.usuarios).forEach(nome=>{
+    const salvo=atual; atual=nome;
+    eventosHistorico().forEach(e=>linhas.push([nome, fmtData(e.data), e.tipo, e.txt, e.det]));
+    atual=salvo;
+  });
+  const csv='\ufeff'+linhas.map(l=>l.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(';')).join('\r\n');
+  entregarArquivo(`historico-leitura-${hojeISO()}.csv`, csv, 'text/csv');
+};
+document.getElementById('restaurar-arq').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const j=JSON.parse(r.result), dados=j.dados||j;
+      if(!dados.usuarios) throw 0;
+      if(!confirm(`Restaurar o histórico salvo em ${j.salvoEm?new Date(j.salvoEm).toLocaleDateString('pt-BR'):'arquivo'}? Os dados deste aparelho serão substituídos.`)) return;
+      banco=dados; salvar();
+      if(!atual || !banco.usuarios[atual]){ atual=null; montarLogin(); ir('login'); }
+      else montarHistorico();
+      toast('Histórico restaurado! ✅');
+    }catch(err){ toast('Esse arquivo não é um histórico da Lili 🙈'); }
+    e.target.value='';
+  };
+  r.readAsText(f);
+};
+
+/* ============ DIÁRIO DO LIVRO ============ */
+function abrirLivro(idl){
+  const l=u().livros.find(x=>x.id===idl); if(!l) return;
+  ir('livro');
+  const resps=(u().respostas||[]).filter(r=>r.livro===idl).slice().reverse();
+  const nq=(l.perguntas||[]).length;
+  document.getElementById('livro-caixa').innerHTML=`
+    <div class="det-topo">
+      <div class="capa" style="${l.capa?`background-image:url(${l.capa})`:''}">${l.capa?'':'📘'}</div>
+      <div><h2 style="margin:0">${esc(l.titulo)}</h2><div>${esc(l.autor)} ${l.idioma==='en'?'🇺🇸':'🇧🇷'}</div>
+      <b style="color:var(--roxo)">${paginasDoLivro(l.id)} páginas lidas</b></div>
+    </div>
+    <h2 style="margin-top:16px">✍️ Diário de respostas</h2>
+    ${resps.length?resps.map(r=>`<div class="resp"><small>${r.data.split('-').reverse().join('/')}</small><b>${esc(r.p)}</b>${esc(r.r)}</div>`).join('')
+      :'<div class="vazio">Ainda não tem respostas. Faça o Quiz Diário sobre este livro! 🧠</div>'}
+    <button class="btn branco" id="b-pais">👨‍👩‍👦 Perguntas da história (pais) · ${nq}</button>`;
+  document.getElementById('b-pais').onclick=()=>abrirPais(idl);
+}
+
+/* ============ ÁREA DOS PAIS: perguntas por livro ============ */
+let paisLiberado=false, paisLivro=null;
+document.getElementById('pais-voltar').onclick=()=>abrirLivro(paisLivro);
+function abrirPais(idl){
+  paisLivro=idl; ir('pais');
+  const cx=document.getElementById('pais-caixa'), user=u();
+  if(!paisLiberado){
+    const novo=!user.pinPais;
+    cx.innerHTML=`<h2>👨‍👩‍👦 Área dos pais</h2>
+      <p>${novo?'Crie uma senha dos pais (4 números), diferente da senha da criança.':'Digite a senha dos pais.'}</p>
+      <input type="password" id="pin-pais" inputmode="numeric" maxlength="4" placeholder="••••">
+      <div class="erro" id="pin-erro"></div>
+      <button class="btn rosa" id="pin-ok">${novo?'Criar senha':'Entrar'}</button>`;
+    document.getElementById('pin-ok').onclick=()=>{
+      const v=document.getElementById('pin-pais').value.trim();
+      if(!/^\d{4}$/.test(v)){ document.getElementById('pin-erro').textContent='Use 4 números.'; return; }
+      if(novo){ if(v===user.senha){ document.getElementById('pin-erro').textContent='Use uma senha diferente da criança.'; return; } user.pinPais=v; salvar(); }
+      else if(v!==user.pinPais){ document.getElementById('pin-erro').textContent='Senha incorreta.'; return; }
+      paisLiberado=true; abrirPais(idl);
+    };
+    return;
+  }
+  const l=user.livros.find(x=>x.id===idl); l.perguntas=l.perguntas||[];
+  cx.innerHTML=`<h2>📘 Perguntas sobre "${esc(l.titulo)}"</h2>
+    <p>Crie perguntas sobre a história com 3 opções. O quiz usa até 3 por dia; se faltar, a Lili completa com perguntas abertas de compreensão.</p>
+    <label for="np-p">Pergunta</label><input type="text" id="np-p" maxlength="120" placeholder="Ex.: Por que a raposa queria ser cativada?">
+    <label for="np-a">Opção A</label><input type="text" id="np-a" maxlength="60">
+    <label for="np-b">Opção B</label><input type="text" id="np-b" maxlength="60">
+    <label for="np-c">Opção C</label><input type="text" id="np-c" maxlength="60">
+    <label for="np-ok">Qual é a certa?</label>
+    <select id="np-ok"><option value="0">A</option><option value="1">B</option><option value="2">C</option></select>
+    <div class="erro" id="np-erro"></div>
+    <button class="btn verde" id="np-salvar">Salvar pergunta ➕</button>
+    <h2 style="margin-top:16px">Perguntas salvas (${l.perguntas.length})</h2>
+    ${l.perguntas.length?l.perguntas.map((q,i)=>`<div class="q-item"><div><b>${esc(q.p)}</b><br>${q.o.map((o,k)=>k===q.c?`✅ ${esc(o)}`:esc(o)).join(' · ')}</div><button class="btn peq branco" data-del="${i}">🗑️</button></div>`).join('')
+      :'<div class="vazio">Nenhuma pergunta ainda.</div>'}`;
+  document.getElementById('np-salvar').onclick=()=>{
+    const p=document.getElementById('np-p').value.trim(), o=['np-a','np-b','np-c'].map(k=>document.getElementById(k).value.trim());
+    if(!p||o.some(x=>!x)){ document.getElementById('np-erro').textContent='Preencha a pergunta e as 3 opções.'; return; }
+    l.perguntas.push({p,o,c:+document.getElementById('np-ok').value}); salvar(); toast('Pergunta salva! ✅'); abrirPais(idl);
+  };
+  cx.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ l.perguntas.splice(+b.dataset.del,1); salvar(); abrirPais(idl); });
+}
+
+/* ============ INÍCIO ============ */
+if(banco.ultimo && banco.usuarios[banco.ultimo]){
+  avatarSel=banco.usuarios[banco.ultimo].avatar;
+  document.getElementById('login-nome').value=banco.ultimo;
+}
+montarLogin();
+window.addEventListener('resize',()=>{ if(atual && document.getElementById('tela-painel').classList.contains('ativa')) desenharGrafico(leiturasDoMes()); });
+</script>
+</body>
+</html>
