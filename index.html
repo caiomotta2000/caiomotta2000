@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Leitura Divertida com a Lili</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lili Leitura">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -177,6 +179,44 @@
   @keyframes cai{to{transform:translateY(110vh) rotate(720deg)}}
   .usuarios{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   .erro{color:#d6246e;font-weight:800;margin-top:8px;min-height:1.2em}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  .atalho.mini{flex-direction:column;text-align:center;font-size:1.1rem;padding:12px 6px;gap:6px;justify-content:center}
+  .atalho.mini .ic{width:52px;height:52px;font-size:1.9rem}
+  .xp-enche{height:100%;background:repeating-linear-gradient(45deg,var(--verde) 0 14px,#7cefbd 14px 28px);transition:width .8s}
+  .medalhas{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px}
+  .medalha{text-align:center;border:3px solid var(--tinta);border-radius:18px;padding:8px 4px;background:#fff;font-size:.9rem;line-height:1.1;box-shadow:3px 3px 0 var(--tinta)}
+  .medalha .em{font-size:2.3rem}
+  .medalha small{display:block;margin-top:4px;color:var(--roxo);font-weight:700}
+  .medalha.bloq{filter:grayscale(1);opacity:.55;box-shadow:none}
+  .relogio{position:relative;width:220px;max-width:80%;margin:16px auto 0}
+  .relogio svg{width:100%;display:block}
+  #c-anel{transition:stroke-dashoffset .25s linear}
+  #c-tempo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:3rem;font-weight:800}
+  #c-tempos .idioma{line-height:1.1;padding:8px 4px}
+  #c-tempos .idioma:disabled{opacity:.6}
+  .flash{min-height:190px;border:4px solid var(--tinta);border-radius:24px;background:var(--amarelo);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:2.2rem;font-weight:800;text-align:center;padding:16px;cursor:pointer;box-shadow:5px 5px 0 var(--tinta);margin-top:8px}
+  .flash.virado{background:var(--verde)}
+  .flash small{font-size:1rem;font-weight:600;margin-top:6px}
+  .estrelas-sel{display:flex;gap:4px}
+  .estrelas-sel button{font-size:2.6rem;background:none;border:none;cursor:pointer;line-height:1}
+  .paleta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .paleta button{width:38px;height:38px;border-radius:50%;border:3px solid var(--tinta);cursor:pointer;font-size:1.1rem}
+  .paleta button.sel{transform:scale(1.2);box-shadow:2px 2px 0 var(--tinta)}
+  #t-canvas{height:260px;border:3px solid var(--tinta);border-radius:16px;background:#fff;touch-action:none}
+  .certificado{border:10px double var(--roxo);background:#fffdf3;padding:22px 16px;text-align:center;border-radius:20px;box-shadow:6px 6px 0 var(--tinta);font-size:1.15rem}
+  .cert-lili{width:110px;margin:0 auto}
+  .cert-titulo{font-size:2rem;font-weight:800;color:var(--rosa);-webkit-text-stroke:1px var(--tinta)}
+  .cert-nome{font-size:2.2rem;font-weight:800;color:var(--roxo);border-bottom:3px dashed var(--tinta);display:inline-block;padding:0 16px}
+  .cert-livro{font-size:1.5rem;font-weight:800}
+  .cert-ass{margin-top:14px;font-weight:800;border-top:3px solid var(--tinta);display:inline-block;padding:4px 20px 0}
+  .topo .btn.peq{padding:6px 10px}
+  @media print{
+    body{background:#fff!important}
+    body *{visibility:hidden}
+    #certificado,#certificado *{visibility:visible}
+    #certificado{position:absolute;left:0;top:0;width:100%;box-shadow:none}
+  }
   textarea{width:100%;font:inherit;font-size:1.15rem;padding:10px 14px;border:3px solid var(--tinta);border-radius:16px;background:#fff;color:var(--tinta);outline:none;min-height:110px;resize:vertical}
   textarea:focus{box-shadow:0 0 0 4px var(--amarelo)}
   .livro{cursor:pointer}
@@ -218,11 +258,15 @@
   <section id="tela-painel" class="tela">
     <div class="topo">
       <div class="ola"><div class="av" id="p-avatar">🦊</div><div><small>Olá,</small><b id="p-nome">Leitor</b></div></div>
-      <div style="display:flex;gap:8px"><button class="btn peq" data-ir="historico">📜 Histórico</button><button class="btn peq branco" id="btn-sair">Sair 👋</button></div>
+      <div style="display:flex;gap:6px"><button class="btn peq" data-ir="historico" title="Histórico">📜</button><button class="btn peq" data-ir="resumo" title="Área dos pais">👨‍👩‍👦</button><button class="btn peq branco" id="btn-sair">Sair 👋</button></div>
     </div>
     <div class="mascote-area">
       <div class="mascote" id="m-painel"></div>
       <div class="balao" id="balao-painel">Que bom te ver!</div>
+    </div>
+    <div class="cartao" style="padding:12px 16px;cursor:pointer" data-ir="medalhas">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b id="nivel-nome" style="font-size:1.2rem">Nível 1</b><span style="font-weight:800">🏅 Medalhas ➜</span></div>
+      <div class="meta-barra"><div class="xp-enche" id="xp-enche" style="width:0"></div><div class="meta-txt" id="xp-txt" style="font-size:.9rem"></div></div>
     </div>
     <div class="stats">
       <div class="stat" style="background:#fff3c4"><b id="s-paginas">0</b><span>páginas no mês</span></div>
@@ -240,10 +284,16 @@
     </div>
     <div class="atalhos">
       <button class="atalho" style="background:var(--verde)" data-ir="registrar"><span class="ic">📖</span><span>Registrar Leitura<small>Quantas páginas você leu?</small></span></button>
-      <button class="atalho" style="background:var(--amarelo)" data-ir="adicionar"><span class="ic">➕</span><span>Adicionar Livro<small>Coloque um livro na estante</small></span></button>
+      <button class="atalho" style="background:#9ddcff" data-ir="crono"><span class="ic">⏱️</span><span>Ler com Cronômetro<small>Desafio de 10 a 30 minutos</small></span></button>
       <button class="atalho" style="background:#c9b8ff" data-ir="quiz"><span class="ic">🧠</span><span>Quiz Diário<small id="quiz-status">Você entendeu a história?</small></span></button>
     </div>
-    <div class="cartao" style="margin-top:18px">
+    <div class="grid2">
+      <button class="atalho mini" style="background:var(--amarelo)" data-ir="adicionar"><span class="ic">➕</span>Adicionar Livro</button>
+      <button class="atalho mini" style="background:#ffd0e4" data-ir="quero"><span class="ic">🌟</span>Quero Ler</button>
+      <button class="atalho mini" style="background:#c8f5dc" data-ir="palavras"><span class="ic">🔤</span>Palavras</button>
+      <button class="atalho mini" style="background:#ffe1c4" data-ir="medalhas"><span class="ic">🏅</span>Medalhas</button>
+    </div>
+    <div class="cartao">
       <h2>Minha estante 📚</h2>
       <div class="estante" id="estante"></div>
     </div>
@@ -266,6 +316,8 @@
         <input type="number" id="r-paginas" value="5" min="1" max="999">
         <button type="button" id="r-mais">+</button>
       </div>
+      <label for="r-minutos">Minutos lendo (opcional)</label>
+      <input type="number" id="r-minutos" min="0" max="600" placeholder="Ex.: 15">
       <label>Em que idioma?</label>
       <div class="idiomas">
         <button type="button" class="idioma pt sel" data-lang="pt"><span class="bandeira">🇧🇷</span>Português</button>
@@ -273,6 +325,7 @@
       </div>
       <label for="r-data">Quando?</label>
       <input type="date" id="r-data">
+      <div id="r-diario"></div>
       <div class="erro" id="r-erro"></div>
       <button class="btn verde" id="btn-registrar">Salvar leitura ⭐</button>
     </div>
@@ -295,6 +348,11 @@
       <div class="idiomas" id="a-idiomas">
         <button type="button" class="idioma pt sel" data-lang="pt"><span class="bandeira">🇧🇷</span>Português</button>
         <button type="button" class="idioma en" data-lang="en"><span class="bandeira">🇺🇸</span>English</button>
+      </div>
+      <label>Onde vai o livro?</label>
+      <div class="idiomas" id="a-status">
+        <button type="button" class="idioma pt sel" data-st="lendo"><span class="bandeira">📖</span>Estou lendo</button>
+        <button type="button" class="idioma pt" data-st="quero"><span class="bandeira">🌟</span>Quero ler</button>
       </div>
       <label>Capa do livro</label>
       <label class="upload" for="a-capa">
@@ -319,6 +377,115 @@
       <label class="btn branco" for="restaurar-arq">📂 Restaurar de um arquivo</label>
     </div>
     <div class="cartao" id="hist-caixa"></div>
+  </section>
+
+  <!-- CRONÔMETRO -->
+  <section id="tela-crono" class="tela">
+    <button class="voltar" data-ir="painel">⬅ Voltar</button>
+    <div class="mascote-area"><div class="mascote" id="m-crono"></div><div class="balao" id="balao-crono"></div></div>
+    <div class="cartao">
+      <h2>⏱️ Ler com cronômetro</h2>
+      <label for="c-livro">Qual livro?</label>
+      <select id="c-livro"></select>
+      <label>Quanto tempo?</label>
+      <div class="idiomas" id="c-tempos">
+        <button type="button" class="idioma pt" data-min="10">10<br>min</button>
+        <button type="button" class="idioma pt sel" data-min="15">15<br>min</button>
+        <button type="button" class="idioma pt" data-min="20">20<br>min</button>
+        <button type="button" class="idioma pt" data-min="30">30<br>min</button>
+      </div>
+      <div class="relogio">
+        <svg viewBox="0 0 220 220"><circle cx="110" cy="110" r="95" fill="#fff" stroke="#2d2250" stroke-width="6"/>
+          <circle id="c-anel" cx="110" cy="110" r="95" fill="none" stroke="#3ab4ff" stroke-width="14" stroke-linecap="round" stroke-dasharray="597" stroke-dashoffset="597" transform="rotate(-90 110 110)"/></svg>
+        <div id="c-tempo">15:00</div>
+      </div>
+      <button class="btn verde" id="c-iniciar">▶️ Começar</button>
+      <button class="btn branco" id="c-terminar">🏁 Terminei de ler</button>
+    </div>
+  </section>
+
+  <!-- PALAVRAS -->
+  <section id="tela-palavras" class="tela">
+    <button class="voltar" data-ir="painel">⬅ Voltar</button>
+    <div class="mascote-area"><div class="mascote" id="m-palavras"></div><div class="balao" id="balao-palavras"></div></div>
+    <div class="cartao">
+      <h2>🔤 Palavra nova</h2>
+      <label for="w-palavra">Palavra</label>
+      <input type="text" id="w-palavra" maxlength="40" placeholder="Ex.: brave" autocomplete="off">
+      <label for="w-significado">O que significa?</label>
+      <input type="text" id="w-significado" maxlength="80" placeholder="Ex.: corajoso" autocomplete="off">
+      <label>Idioma da palavra</label>
+      <div class="idiomas" id="w-idiomas">
+        <button type="button" class="idioma pt" data-lang="pt"><span class="bandeira">🇧🇷</span>Português</button>
+        <button type="button" class="idioma en sel" data-lang="en"><span class="bandeira">🇺🇸</span>English</button>
+      </div>
+      <label for="w-livro">De qual livro? (opcional)</label>
+      <select id="w-livro"></select>
+      <div class="erro" id="w-erro"></div>
+      <button class="btn verde" id="w-salvar">Anotar palavra ✏️</button>
+    </div>
+    <div class="cartao" id="w-lista"></div>
+  </section>
+
+  <!-- MEDALHAS -->
+  <section id="tela-medalhas" class="tela">
+    <button class="voltar" data-ir="painel">⬅ Voltar</button>
+    <div class="mascote-area"><div class="mascote" id="m-medalhas"></div><div class="balao" id="balao-medalhas"></div></div>
+    <div class="cartao" id="medalhas-caixa"></div>
+  </section>
+
+  <!-- QUERO LER -->
+  <section id="tela-quero" class="tela">
+    <button class="voltar" data-ir="painel">⬅ Voltar</button>
+    <div class="mascote-area"><div class="mascote" id="m-quero"></div><div class="balao" id="balao-quero"></div></div>
+    <div class="cartao" id="quero-caixa"></div>
+  </section>
+
+  <!-- TERMINEI O LIVRO -->
+  <section id="tela-terminei" class="tela">
+    <button class="voltar" id="t-voltar">⬅ Voltar</button>
+    <div class="mascote-area"><div class="mascote" id="m-terminei"></div><div class="balao" id="balao-terminei"></div></div>
+    <div class="cartao">
+      <h2 id="t-titulo">🏁 Terminei!</h2>
+      <label>Que nota você dá para o livro?</label>
+      <div id="t-estrelas" class="estrelas-sel"><button>☆</button><button>☆</button><button>☆</button><button>☆</button><button>☆</button></div>
+      <label for="t-opiniao">O que você achou da história?</label>
+      <textarea id="t-opiniao" placeholder="Eu gostei porque..."></textarea>
+      <label>Desenhe sua parte favorita 🎨</label>
+      <div class="paleta" id="t-paleta">
+        <button data-cor="#2d2250" class="sel" style="background:#2d2250"></button>
+        <button data-cor="#ff5fa2" style="background:#ff5fa2"></button>
+        <button data-cor="#ffd23f" style="background:#ffd23f"></button>
+        <button data-cor="#3ddc97" style="background:#3ddc97"></button>
+        <button data-cor="#3ab4ff" style="background:#3ab4ff"></button>
+        <button data-cor="#ff8c42" style="background:#ff8c42"></button>
+        <button data-cor="#8b5a2b" style="background:#8b5a2b"></button>
+        <button data-cor="#ffffff" style="background:#fff" title="Borracha">🧽</button>
+        <button id="t-limpar" title="Limpar" style="background:#fff;width:auto;border-radius:12px;padding:0 8px;font-weight:800">Limpar</button>
+      </div>
+      <canvas id="t-canvas"></canvas>
+      <button class="btn" id="t-salvar">Ganhar meu certificado 🎓</button>
+    </div>
+  </section>
+
+  <!-- CERTIFICADO -->
+  <section id="tela-certificado" class="tela">
+    <div class="certificado" id="certificado"></div>
+    <button class="btn azul" id="cert-imprimir">🖨️ Imprimir ou salvar PDF</button>
+    <button class="btn branco" id="cert-voltar">🏠 Voltar ao painel</button>
+  </section>
+
+  <!-- RESUMO PARA OS PAIS -->
+  <section id="tela-resumo" class="tela">
+    <button class="voltar" data-ir="painel">⬅ Voltar</button>
+    <div class="cartao" id="resumo-caixa"></div>
+  </section>
+
+  <!-- DIÁRIO DO DIA -->
+  <section id="tela-diario" class="tela">
+    <button class="voltar" data-ir="registrar">⬅ Voltar</button>
+    <div class="mascote-area"><div class="mascote" id="m-diario"></div><div class="balao" id="balao-diario"></div></div>
+    <div class="cartao" id="diario-caixa"></div>
   </section>
 
   <!-- LIVRO (diário) -->
@@ -349,7 +516,8 @@
 
 <script>
 /* ============ MASCOTE (Lili, a coruja) ============ */
-function mascoteSVG(humor){
+function mascoteSVG(humor, nivel){
+  nivel = nivel||1;
   const olhos = {
     feliz:'<path d="M38 52 q8 -10 16 0" stroke="#2d2250" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M66 52 q8 -10 16 0" stroke="#2d2250" stroke-width="5" fill="none" stroke-linecap="round"/>',
     uau:'<circle cx="46" cy="52" r="13" fill="#fff" stroke="#2d2250" stroke-width="4"/><circle cx="74" cy="52" r="13" fill="#fff" stroke="#2d2250" stroke-width="4"/><circle cx="46" cy="52" r="7" fill="#2d2250"/><circle cx="74" cy="52" r="7" fill="#2d2250"/><circle cx="49" cy="49" r="2.5" fill="#fff"/><circle cx="77" cy="49" r="2.5" fill="#fff"/>',
@@ -367,11 +535,13 @@ function mascoteSVG(humor){
     : humor==='ops' ? '<path d="M92 40 q4 8 0 12 q-4 -4 0 -12z" fill="#3ab4ff" stroke="#2d2250" stroke-width="2"/>' : '';
   return `<svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="60" cy="134" rx="34" ry="5" fill="#2d2250" opacity=".2"/>
+    ${nivel>=4?'<path d="M28 44 Q8 100 18 132 L102 132 Q112 100 92 44 Z" fill="#ff3b5c" stroke="#2d2250" stroke-width="4" stroke-linejoin="round"/>':''}
     <path d="M26 30 L34 6 L46 24 Z" fill="#7b5cff" stroke="#2d2250" stroke-width="4" stroke-linejoin="round"/>
     <path d="M94 30 L86 6 L74 24 Z" fill="#7b5cff" stroke="#2d2250" stroke-width="4" stroke-linejoin="round"/>
     <ellipse cx="60" cy="78" rx="44" ry="52" fill="#9d84ff" stroke="#2d2250" stroke-width="4"/>
     <ellipse cx="60" cy="96" rx="27" ry="30" fill="#ffe7b0" stroke="#2d2250" stroke-width="3"/>
     <path d="M48 92 q4 4 8 0 M64 92 q4 4 8 0 M56 104 q4 4 8 0" stroke="#e8b960" stroke-width="3" fill="none"/>
+    ${nivel>=2?'<path d="M60 86 L46 79 L46 93 Z M60 86 L74 79 L74 93 Z" fill="#ff5fa2" stroke="#2d2250" stroke-width="3" stroke-linejoin="round"/><circle cx="60" cy="86" r="4" fill="#ffd23f" stroke="#2d2250" stroke-width="2"/>':''}
     <path d="M16 78 q-10 22 8 40 q6 -18 4 -36z" fill="#7b5cff" stroke="#2d2250" stroke-width="4" stroke-linejoin="round"/>
     <path d="M104 78 q10 22 -8 40 q-6 -18 -4 -36z" fill="#7b5cff" stroke="#2d2250" stroke-width="4" stroke-linejoin="round"/>
     <circle cx="46" cy="52" r="18" fill="#ffd23f" stroke="#2d2250" stroke-width="4"/>
@@ -384,19 +554,21 @@ function mascoteSVG(humor){
     <rect x="34" y="112" width="52" height="18" rx="3" fill="#ff5fa2" stroke="#2d2250" stroke-width="4"/>
     <line x1="60" y1="112" x2="60" y2="130" stroke="#2d2250" stroke-width="3"/>
     <path d="M44 128 l-4 8 M76 128 l4 8 M52 130 l0 7 M68 130 l0 7" stroke="#ff8c42" stroke-width="4" stroke-linecap="round"/>
+    ${nivel>=5?'<path d="M38 28 L42 6 L52 18 L60 2 L68 18 L78 6 L82 28 Z" fill="#ffd23f" stroke="#2d2250" stroke-width="4" stroke-linejoin="round"/><circle cx="60" cy="20" r="3" fill="#ff5fa2"/>'
+      : nivel>=3?'<path d="M60 4 L98 16 L60 28 L22 16 Z" fill="#2d2250"/><rect x="44" y="18" width="32" height="12" fill="#2d2250"/><path d="M96 16 L98 34" stroke="#ffd23f" stroke-width="3"/><circle cx="98" cy="36" r="4" fill="#ffd23f" stroke="#2d2250" stroke-width="2"/>':''}
     ${extra}
   </svg>`;
 }
 function mascote(id, humor, pular){
   const el = document.getElementById(id);
-  el.innerHTML = mascoteSVG(humor);
+  el.innerHTML = mascoteSVG(humor, (atual && banco.usuarios[atual]) ? nivelInfo().nivel : 1);
   if(pular){ el.classList.remove('pula'); void el.offsetWidth; el.classList.add('pula'); setTimeout(()=>el.classList.remove('pula'),1300); }
 }
 
 /* ============ DADOS ============ */
 const CHAVE = 'leituraDivertida_v1';
 const AVATARES = ['🦊','🐼','🦁','🐸','🐙','🦄','🐯','🐶','🐱','🚀','⚽','🦖'];
-let banco = JSON.parse(localStorage.getItem(CHAVE) || '{"usuarios":{},"ultimo":null}');
+let banco = migrar(JSON.parse(localStorage.getItem(CHAVE) || '{"usuarios":{},"ultimo":null}'));
 let atual = null; // nome do usuario
 let avatarSel = AVATARES[0];
 let langRegistro = 'pt', langLivro = 'pt', capaDataURL = null;
@@ -429,6 +601,11 @@ function ir(tela){
   if(tela==='adicionar') montarAdicionar();
   if(tela==='quiz') montarQuiz();
   if(tela==='historico') montarHistorico();
+  if(tela==='crono') montarCrono();
+  if(tela==='palavras') montarPalavras();
+  if(tela==='medalhas') montarMedalhas();
+  if(tela==='quero') montarQuero();
+  if(tela==='resumo') montarResumo();
 }
 document.querySelectorAll('[data-ir]').forEach(b=>b.addEventListener('click',()=>ir(b.dataset.ir)));
 
@@ -460,14 +637,14 @@ document.getElementById('btn-entrar').onclick=()=>{
     if(existente.senha!==senha){ erro.textContent='Hmm, senha errada. Tente de novo! 🙈'; mascote('m-login','ops',true); return; }
     existente.avatar=avatarSel;
   } else {
-    banco.usuarios[nome]={senha, avatar:avatarSel, meta:300, livros:[], leituras:[], quiz:{}};
+    banco.usuarios[nome]=migrar({usuarios:{x:{senha, avatar:avatarSel, meta:300}}}).usuarios.x;
   }
   atual=nome; banco.ultimo=nome; salvar();
   erro.textContent=''; document.getElementById('login-senha').value='';
   ir('painel');
 };
 document.getElementById('login-senha').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('btn-entrar').click(); });
-document.getElementById('btn-sair').onclick=()=>{ atual=null; paisLiberado=false; montarLogin(); ir('login'); };
+document.getElementById('btn-sair').onclick=()=>{ pararCrono(); registroPendente=null; atual=null; paisLiberado=false; montarLogin(); ir('login'); };
 
 /* ============ PAINEL ============ */
 const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -487,7 +664,7 @@ function montarPainel(){
   document.getElementById('p-avatar').textContent=user.avatar;
   const mes=leiturasDoMes(), total=mes.reduce((s,l)=>s+l.paginas,0), seq=sequencia();
   document.getElementById('s-paginas').textContent=total;
-  document.getElementById('s-livros').textContent=user.livros.length;
+  document.getElementById('s-livros').textContent=user.livros.filter(l=>l.status!=='quero').length;
   document.getElementById('s-sequencia').textContent=seq+'🔥';
   document.getElementById('titulo-mes').textContent='Meu '+MESES[new Date().getMonth()]+' 📅';
   const pct=Math.min(100,Math.round(total/user.meta*100));
@@ -497,7 +674,9 @@ function montarPainel(){
   document.getElementById('quiz-status').textContent= feitoQuiz ? `Feito hoje: ${feitoQuiz.acertos}/3 ⭐` : 'Você entendeu a história?';
 
   let frase, humor='feliz';
-  if(!user.livros.length){ frase='Vamos começar colocando seu primeiro livro na estante! 📚'; humor='uau'; }
+  const pendP=diarioPendente(hojeISO());
+  if(pendP && !user.leituras.some(l=>l.data===hojeISO())){ frase=`Antes de registrar a leitura de hoje, escreva o diário de ${fmtData(pendP)}! 📓`; humor='pensa'; }
+  else if(!user.livros.length){ frase='Vamos começar colocando seu primeiro livro na estante! 📚'; humor='uau'; }
   else if(pct>=100){ frase='UAU! Você bateu a meta do mês! Você é um super leitor! 🏆'; humor='uau'; }
   else if(seq>=3){ frase=`${seq} dias seguidos lendo! Não deixa o fogo apagar! 🔥`; humor='uau'; }
   else if(user.leituras.length && (!banco.ultimoBackup || (Date.now()-new Date(banco.ultimoBackup))/864e5>7)){ frase='Psiu! Faz tempo que você não salva seu histórico. Toque em 📜 Histórico! 💾'; humor='pensa'; }
@@ -507,6 +686,7 @@ function montarPainel(){
   mascote('m-painel',humor);
   desenharGrafico(mes);
   montarEstante();
+  montarExtrasPainel();
 }
 function desenharGrafico(mes){
   const cv=document.getElementById('grafico'), dpr=window.devicePixelRatio||1;
@@ -539,13 +719,13 @@ function desenharGrafico(mes){
 }
 function paginasDoLivro(idl){ return u().leituras.filter(l=>l.livro===idl).reduce((s,l)=>s+l.paginas,0); }
 function montarEstante(){
-  const est=document.getElementById('estante'), livros=u().livros;
+  const est=document.getElementById('estante'), livros=u().livros.filter(l=>l.status!=='quero');
   if(!livros.length){ est.innerHTML='<div class="vazio" style="grid-column:1/-1">Sua estante está vazia. Adicione um livro! 🙂</div>'; return; }
   const cores=['#ffd23f','#ff8c42','#3ddc97','#3ab4ff','#ff5fa2','#c9b8ff'];
   est.innerHTML=livros.map((l,i)=>`
     <div class="livro" data-livro="${l.id}">
       <div class="capa" style="${l.capa?`background-image:url(${l.capa})`:`background-color:${cores[i%cores.length]}`}">
-        ${l.capa?'':'📘'}<span class="tag">${l.idioma==='en'?'🇺🇸':'🇧🇷'}</span>
+        ${l.capa?'':'📘'}<span class="tag">${l.idioma==='en'?'🇺🇸':'🇧🇷'}</span>${l.status==='terminado'?'<span class="tag" style="left:-8px;right:auto">🏁</span>':''}
       </div>
       ${esc(l.titulo)}<small>${esc(l.autor)}</small><span class="pag">${paginasDoLivro(l.id)} págs lidas</span>
     </div>`).join('');
@@ -562,17 +742,20 @@ function marcarIdioma(grupo, lang){
   grupo.querySelectorAll('.idioma').forEach(b=>b.classList.toggle('sel', b.dataset.lang===lang));
 }
 function montarRegistrar(){
-  const sel=document.getElementById('r-livro'), livros=u().livros;
+  const sel=document.getElementById('r-livro'), livros=u().livros.filter(l=>l.status!=='quero');
+  document.getElementById('r-minutos').value = registroPendente ? registroPendente.minutos : '';
   document.getElementById('r-erro').textContent='';
   document.getElementById('r-data').value=hojeISO();
   document.getElementById('r-data').max=hojeISO();
+  setTimeout(atualizarAvisoDiario,0);
   if(!livros.length){
     sel.innerHTML='<option value="">Nenhum livro ainda</option>';
     document.getElementById('balao-registrar').textContent='Primeiro adicione um livro na estante, tá? 📚';
     mascote('m-registrar','pensa'); return;
   }
   sel.innerHTML=livros.map(l=>`<option value="${l.id}">${l.idioma==='en'?'🇺🇸':'🇧🇷'} ${esc(l.titulo)}</option>`).join('');
-  langRegistro=livros[0].idioma; marcarIdioma(document.getElementById('tela-registrar'),langRegistro);
+  if(registroPendente && livros.some(l=>l.id===registroPendente.livro)) sel.value=registroPendente.livro;
+  langRegistro=(livros.find(l=>l.id===sel.value)||livros[0]).idioma; marcarIdioma(document.getElementById('tela-registrar'),langRegistro);
   document.getElementById('balao-registrar').textContent='Conta pra mim: o que você leu hoje?';
   mascote('m-registrar','feliz');
 }
@@ -588,8 +771,11 @@ document.getElementById('btn-registrar').onclick=()=>{
   const livro=document.getElementById('r-livro').value, pag=parseInt(rp.value,10), data=document.getElementById('r-data').value||hojeISO();
   const erro=document.getElementById('r-erro');
   if(!livro){ ir('adicionar'); return; }
+  if(diarioPendente(data)){ atualizarAvisoDiario(); erro.textContent='Primeiro escreva o diário do dia anterior ✍️'; mascote('m-registrar','pensa',true); return; }
   if(!(pag>0 && pag<1000)){ erro.textContent='Coloque um número de páginas entre 1 e 999 🔢'; mascote('m-registrar','ops',true); return; }
-  u().leituras.push({id:id(), livro, paginas:pag, idioma:langRegistro, data}); salvar();
+  const minutos=parseInt(document.getElementById('r-minutos').value,10);
+  const reg={id:id(), livro, paginas:pag, idioma:langRegistro, data}; if(minutos>0 && minutos<=600) reg.minutos=minutos;
+  u().leituras.push(reg); salvar(); registroPendente=null;
   erro.textContent='';
   const frases = langRegistro==='en'
     ? [`Awesome! ${pag} pages in English! 🇺🇸`, `Great job! You read ${pag} pages! 🌟`]
@@ -601,6 +787,7 @@ document.getElementById('btn-registrar').onclick=()=>{
 
 /* ============ ADICIONAR ============ */
 function montarAdicionar(){
+  statusLivro='lendo'; marcarStatus();
   ['a-titulo','a-autor'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('a-capa').value=''; capaDataURL=null; langLivro='pt';
   const pv=document.getElementById('a-preview'); pv.style.backgroundImage=''; pv.textContent='📕';
@@ -633,11 +820,12 @@ document.getElementById('btn-adicionar').onclick=()=>{
   const erro=document.getElementById('a-erro');
   if(!titulo){ erro.textContent='Qual é o título do livro? ✏️'; mascote('m-adicionar','ops',true); return; }
   if(!autor){ erro.textContent='Quem escreveu o livro? ✏️'; mascote('m-adicionar','ops',true); return; }
-  u().livros.push({id:id(), titulo, autor, idioma:langLivro, capa:capaDataURL, criado:hojeISO()});
+  u().livros.push({id:id(), titulo, autor, idioma:langLivro, capa:capaDataURL, criado:hojeISO(), status:statusLivro, perguntas:[]});
+  const foiQuero=statusLivro==='quero';
   try{ salvar(); }catch(err){ u().livros.pop(); erro.textContent='A estante ficou cheia! Tente uma foto menor.'; return; }
   document.getElementById('balao-adicionar').textContent=`"${titulo}" está na estante! Bora ler? 📚`;
   mascote('m-adicionar','uau',true); confete(); toast('Livro adicionado! 📚');
-  setTimeout(()=>ir('painel'),1800);
+  setTimeout(()=>ir(foiQuero?'quero':'painel'),1800);
 };
 
 /* ============ QUIZ DIÁRIO: você entendeu a história? ============ */
@@ -681,14 +869,14 @@ function livroMaisRecente(){
 function montarQuiz(){
   const feito=u().quiz[hojeISO()];
   if(feito){ mostrarResultado(feito.acertos,true,feito.livro); return; }
-  const livros=u().livros, cx=document.getElementById('quiz-caixa');
+  const livros=u().livros.filter(l=>l.status!=='quero'), cx=document.getElementById('quiz-caixa');
   if(!livros.length){
     document.getElementById('balao-quiz').textContent='Primeiro coloque um livro na estante e leia um pouquinho! 📚';
     mascote('m-quiz','pensa');
     cx.innerHTML='<button class="btn" id="q-add">Adicionar livro ➕</button>';
     document.getElementById('q-add').onclick=()=>ir('adicionar'); return;
   }
-  const rec=livroMaisRecente();
+  let rec=livroMaisRecente(); if(!rec||rec.status==='quero') rec=livros[livros.length-1];
   document.getElementById('balao-quiz').textContent='Vamos ver se você entendeu a história? Escolha o livro que leu! 🤓';
   mascote('m-quiz','pensa');
   cx.innerHTML=`<h2>🧠 Você entendeu a história?</h2>
@@ -710,7 +898,7 @@ function iniciarQuiz(livroId){
     const op=COMPREENSAO[g][Math.floor(rnd()*COMPREENSAO[g].length)];
     lista.push({tipo:'aberta', p: livro.idioma==='en'?op.en:op.pt, trad: livro.idioma==='en'?TRAD[op.en]:''});
   });
-  quiz={livro, lista, n:0, acertos:0, marcas:[], tentativa:0};
+  quiz={livro, lista, n:0, acertos:0, marcas:[], tentativa:0, bonus:gerarBonus(), bonusOk:null};
   document.getElementById('balao-quiz').textContent=`Vamos falar sobre "${livro.titulo}"! Pense no que você leu. 💭`;
   mostrarPergunta();
 }
@@ -737,12 +925,33 @@ function mostrarPergunta(){
   }
 }
 function botaoProxima(){
-  const ultima=quiz.n===2;
-  document.getElementById('quiz-prox').innerHTML=`<button class="btn azul">${ultima?'Ver resultado 🏆':'Próxima pergunta ➡️'}</button>`;
+  const ultima=quiz.n===2, temBonus=ultima && quiz.bonus && quiz.bonusOk===null;
+  document.getElementById('quiz-prox').innerHTML=`<button class="btn azul">${temBonus?'Palavra bônus ✨':(ultima?'Ver resultado 🏆':'Próxima pergunta ➡️')}</button>`;
   document.querySelector('#quiz-prox .btn').onclick=()=>{
-    if(ultima){ u().quiz[hojeISO()]={acertos:quiz.acertos, livro:quiz.livro.id}; salvar(); mostrarResultado(quiz.acertos,false,quiz.livro.id); }
+    if(temBonus){ mostrarBonus(); }
+    else if(ultima){ finalizarQuiz(); }
     else { quiz.n++; document.getElementById('balao-quiz').textContent='Próxima! Pense com calma na história... 🤔'; mostrarPergunta(); }
   };
+}
+function finalizarQuiz(){
+  u().quiz[hojeISO()]={acertos:quiz.acertos, livro:quiz.livro.id, bonus:quiz.bonusOk};
+  salvar(); mostrarResultado(quiz.acertos,false,quiz.livro.id);
+}
+function mostrarBonus(){
+  const q=quiz.bonus, cx=document.getElementById('quiz-caixa');
+  document.getElementById('balao-quiz').textContent='Pergunta extra do seu caderno de palavras! ✨'; mascote('m-quiz','pensa');
+  cx.innerHTML=`<div style="text-align:center"><span class="tipo-q" style="background:var(--amarelo)">🔤 Bônus</span></div>
+    <div class="pergunta">${esc(q.p)}</div>
+    <div id="opcoes">${q.o.map((t,i)=>`<button class="opcao" data-i="${i}">${['🅰️','🅱️','©️'][i]} ${esc(t)}</button>`).join('')}</div><div id="quiz-prox"></div>`;
+  cx.querySelectorAll('.opcao').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i, bt=cx.querySelectorAll('.opcao'); bt.forEach(x=>x.disabled=true); bt[q.c].classList.add('certa');
+    const p=u().palavras.find(x=>x.id===q.alvo);
+    if(i===q.c){ quiz.bonusOk=true; if(p) p.acertos=(p.acertos||0)+1; document.getElementById('balao-quiz').textContent='Acertou o bônus! Que memória! ✨'; mascote('m-quiz','uau',true); }
+    else { quiz.bonusOk=false; if(p) p.erros=(p.erros||0)+1; bt[i].classList.add('errada'); document.getElementById('balao-quiz').textContent=`Quase! Significa "${q.o[q.c]}". Treine nos cartões! 🃏`; mascote('m-quiz','ops',true); }
+    salvar();
+    document.getElementById('quiz-prox').innerHTML='<button class="btn azul">Ver resultado 🏆</button>';
+    document.querySelector('#quiz-prox .btn').onclick=finalizarQuiz;
+  });
 }
 function responderEscolha(i){
   const q=quiz.lista[quiz.n], botoes=document.querySelectorAll('#opcoes .opcao');
@@ -790,6 +999,7 @@ function mostrarResultado(ac, jaFeito, livroId){
     ${livro?`<p style="text-align:center;font-weight:700">📘 ${esc(livro.titulo)}</p>`:''}
     <div class="estrelas">${'⭐'.repeat(ac)}${'☆'.repeat(3-ac)}</div>
     <p style="text-align:center;font-size:1.3rem;font-weight:800">${ac} de 3 estrelas</p>
+    ${(u().quiz[hojeISO()]||{}).bonus===true?'<p style="text-align:center;font-weight:800">✨ Acertou a palavra bônus!</p>':''}
     <p style="text-align:center">Suas respostas ficam guardadas no diário do livro. ✍️</p>
     ${livro?'<button class="btn branco" data-l="1">Ver diário do livro 📖</button>':''}
     <button class="btn verde" data-v="1">Voltar ao painel 🏠</button>`;
@@ -803,10 +1013,12 @@ function eventosHistorico(){
   const user=u(), nomeLivro=idl=>{ const l=user.livros.find(x=>x.id===idl); return l?l.titulo:'(livro apagado)'; };
   const ev=[];
   user.livros.forEach(l=>ev.push({data:l.criado||'', tipo:'livro', ic:'➕', txt:`Livro adicionado: ${l.titulo}`, det:`${l.autor} · ${l.idioma==='en'?'Inglês':'Português'}`}));
-  user.leituras.forEach(l=>ev.push({data:l.data, tipo:'leitura', ic:'📖', txt:`${l.paginas} páginas de ${nomeLivro(l.livro)}`, det:l.idioma==='en'?'Inglês 🇺🇸':'Português 🇧🇷', id:l.id}));
+  user.leituras.forEach(l=>ev.push({data:l.data, tipo:'leitura', ic:'📖', txt:`${l.paginas} páginas de ${nomeLivro(l.livro)}`, det:(l.idioma==='en'?'Inglês 🇺🇸':'Português 🇧🇷')+(l.minutos?` · ${l.minutos} min`:''), id:l.id}));
   Object.entries(user.quiz||{}).forEach(([d,q])=>ev.push({data:d, tipo:'quiz', ic:'🧠', txt:`Quiz: ${q.acertos} de 3 estrelas`, det:q.livro?nomeLivro(q.livro):''}));
+  (user.palavras||[]).forEach(p=>ev.push({data:p.criado, tipo:'palavra', ic:'🔤', txt:`Palavra nova: ${p.palavra}`, det:p.significado}));
+  user.livros.filter(l=>l.terminadoEm).forEach(l=>ev.push({data:l.terminadoEm, tipo:'terminado', ic:'🏁', txt:`Terminou: ${l.titulo}`, det:'⭐'.repeat(l.estrelas||0)+(l.opiniao?' '+l.opiniao:'')}));
   (user.respostas||[]).forEach(r=>ev.push({data:r.data, tipo:'resposta', ic:'✍️', txt:r.p, det:`${nomeLivro(r.livro)}: “${r.r}”`}));
-  const ordem={livro:0,leitura:1,quiz:2,resposta:3};
+  const ordem={livro:0,leitura:1,quiz:2,resposta:3,palavra:4,terminado:5};
   return ev.sort((a,b)=> a.data===b.data ? ordem[b.tipo]-ordem[a.tipo] : (a.data<b.data?1:-1));
 }
 let filtroHist='todos';
@@ -814,7 +1026,7 @@ function montarHistorico(){
   const todos=eventosHistorico(), ev=filtroHist==='todos'?todos:todos.filter(e=>e.tipo===filtroHist);
   const user=u(), totalPag=user.leituras.reduce((s,l)=>s+l.paginas,0);
   const ult=banco.ultimoBackup;
-  const filtros=[['todos','Tudo'],['leitura','📖 Leituras'],['livro','➕ Livros'],['quiz','🧠 Quiz'],['resposta','✍️ Respostas']];
+  const filtros=[['todos','Tudo'],['leitura','📖 Leituras'],['livro','➕ Livros'],['terminado','🏁 Terminados'],['quiz','🧠 Quiz'],['resposta','✍️ Respostas'],['palavra','🔤 Palavras']];
   let html=`<h2>📜 Histórico de ${esc(atual)}</h2>
     <p><b>${user.leituras.length}</b> leituras · <b>${totalPag}</b> páginas · <b>${user.livros.length}</b> livros · <b>${Object.keys(user.quiz||{}).length}</b> quizzes</p>
     <div class="usuarios">${filtros.map(([k,t])=>`<button class="btn peq ${k===filtroHist?'':'branco'}" data-f="${k}">${t}</button>`).join('')}</div>`;
@@ -864,8 +1076,8 @@ document.getElementById('restaurar-arq').onchange=e=>{
     try{
       const j=JSON.parse(r.result), dados=j.dados||j;
       if(!dados.usuarios) throw 0;
-      if(!confirm(`Restaurar o histórico salvo em ${j.salvoEm?new Date(j.salvoEm).toLocaleDateString('pt-BR'):'arquivo'}? Os dados deste aparelho serão substituídos.`)) return;
-      banco=dados; salvar();
+      if(!confirm(`Trazer o histórico salvo em ${j.salvoEm?new Date(j.salvoEm).toLocaleDateString('pt-BR'):'arquivo'}? Ele será juntado com o que já está neste aparelho, sem apagar nada.`)) return;
+      banco=juntarBancos(migrar(banco), migrar(dados)); salvar();
       if(!atual || !banco.usuarios[atual]){ atual=null; montarLogin(); ir('login'); }
       else montarHistorico();
       toast('Histórico restaurado! ✅');
@@ -887,11 +1099,13 @@ function abrirLivro(idl){
       <div><h2 style="margin:0">${esc(l.titulo)}</h2><div>${esc(l.autor)} ${l.idioma==='en'?'🇺🇸':'🇧🇷'}</div>
       <b style="color:var(--roxo)">${paginasDoLivro(l.id)} páginas lidas</b></div>
     </div>
+    ${blocoTerminado(l)}
     <h2 style="margin-top:16px">✍️ Diário de respostas</h2>
     ${resps.length?resps.map(r=>`<div class="resp"><small>${r.data.split('-').reverse().join('/')}</small><b>${esc(r.p)}</b>${esc(r.r)}</div>`).join('')
       :'<div class="vazio">Ainda não tem respostas. Faça o Quiz Diário sobre este livro! 🧠</div>'}
     <button class="btn branco" id="b-pais">👨‍👩‍👦 Perguntas da história (pais) · ${nq}</button>`;
   document.getElementById('b-pais').onclick=()=>abrirPais(idl);
+  ligarTerminado(l);
 }
 
 /* ============ ÁREA DOS PAIS: perguntas por livro ============ */
@@ -936,6 +1150,426 @@ function abrirPais(idl){
     l.perguntas.push({p,o,c:+document.getElementById('np-ok').value}); salvar(); toast('Pergunta salva! ✅'); abrirPais(idl);
   };
   cx.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ l.perguntas.splice(+b.dataset.del,1); salvar(); abrirPais(idl); });
+}
+
+/* ============ MIGRAÇÃO (aceita histórico das versões anteriores) ============ */
+function migrar(b){
+  b = (b && typeof b==='object') ? b : {};
+  b.usuarios = b.usuarios || {};
+  Object.values(b.usuarios).forEach(us=>{
+    us.livros = us.livros || []; us.leituras = us.leituras || []; us.quiz = us.quiz || {};
+    us.respostas = us.respostas || []; us.palavras = us.palavras || []; us.medalhasVistas = us.medalhasVistas || [];
+    us.meta = us.meta || 300;
+    us.livros.forEach(l=>{ if(!l.status) l.status = l.terminadoEm ? 'terminado' : 'lendo'; l.perguntas = l.perguntas || []; });
+  });
+  if(!('ultimo' in b)) b.ultimo = null;
+  return b;
+}
+function juntarBancos(destino, origem){
+  // junta sem apagar nada: o que já existe no aparelho fica, o que vem do arquivo é acrescentado
+  Object.entries(origem.usuarios).forEach(([nome, uo])=>{
+    const ud = destino.usuarios[nome];
+    if(!ud){ destino.usuarios[nome] = uo; return; }
+    ['livros','leituras','palavras'].forEach(k=>{
+      const ids = new Set(ud[k].map(x=>x.id));
+      uo[k].forEach(x=>{ if(!ids.has(x.id)) ud[k].push(x); });
+    });
+    const chave = r=>r.data+'|'+r.livro+'|'+r.p;
+    const rs = new Set(ud.respostas.map(chave));
+    uo.respostas.forEach(r=>{ if(!rs.has(chave(r))) ud.respostas.push(r); });
+    Object.entries(uo.quiz).forEach(([d,q])=>{ if(!ud.quiz[d]) ud.quiz[d]=q; });
+    ud.medalhasVistas = [...new Set([...ud.medalhasVistas, ...uo.medalhasVistas])];
+    if(!ud.pinPais && uo.pinPais) ud.pinPais = uo.pinPais;
+  });
+  if(!destino.ultimoBackup) destino.ultimoBackup = origem.ultimoBackup;
+  return destino;
+}
+
+/* ============ SEMANAS ============ */
+function inicioSemana(d=new Date()){ const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); const dia=(x.getDay()+6)%7; x.setDate(x.getDate()-dia); return x; }
+function diasDaSemana(ini){ return [...Array(7)].map((_,i)=>{ const x=new Date(ini); x.setDate(x.getDate()+i); return hojeISO(x); }); }
+function paginasNaSemana(us, ini){ const dias=new Set(diasDaSemana(ini)); return us.leituras.filter(l=>dias.has(l.data)).reduce((s,l)=>s+l.paginas,0); }
+/* ============ NÍVEIS E MEDALHAS ============ */
+const NIVEIS=[
+  {xp:0,   nome:'Leitor Curioso',       premio:'—'},
+  {xp:60,  nome:'Explorador de Livros', premio:'gravatinha 🎀'},
+  {xp:180, nome:'Sábio das Páginas',    premio:'chapéu de formatura 🎓'},
+  {xp:400, nome:'Herói da Leitura',     premio:'capa de herói 🦸'},
+  {xp:750, nome:'Lenda da Leitura',     premio:'coroa 👑'}
+];
+function estatisticas(us){
+  us=us||u();
+  const pag=us.leituras.reduce((s,l)=>s+l.paginas,0);
+  const pagEn=us.leituras.filter(l=>l.idioma==='en').reduce((s,l)=>s+l.paginas,0);
+  const min=us.leituras.reduce((s,l)=>s+(l.minutos||0),0);
+  const term=us.livros.filter(l=>l.status==='terminado');
+  const quizzes=Object.values(us.quiz||{});
+  const estrelas=quizzes.reduce((s,q)=>s+(q.acertos||0),0);
+  return {pag,pagEn,min,term:term.length,desenhos:term.filter(l=>l.desenho).length,quizzes:quizzes.length,
+    perfeito:quizzes.some(q=>q.acertos===3),estrelas,palavras:us.palavras.length,livros:us.livros.filter(l=>l.status!=='quero').length};
+}
+function nivelInfo(us){
+  const e=estatisticas(us);
+  const xp=e.pag + e.term*30 + e.estrelas*5 + e.palavras*3 + Math.floor(e.min/5);
+  let n=0; NIVEIS.forEach((v,i)=>{ if(xp>=v.xp) n=i; });
+  const prox=NIVEIS[n+1];
+  return {xp, nivel:n+1, nome:NIVEIS[n].nome, prox, pct: prox ? Math.round((xp-NIVEIS[n].xp)/(prox.xp-NIVEIS[n].xp)*100) : 100};
+}
+function listaMedalhas(){
+  const e=estatisticas(), seq=sequenciaMax();
+  const m=(id,em,nome,atual_,alvo)=>({id,em,nome,ok:atual_>=alvo,prog:`${Math.min(atual_,alvo)}/${alvo}`});
+  return [
+    m('livro1','📚','Primeiro livro na estante',e.livros,1),
+    m('leit1','📖','Primeira leitura',u().leituras.length,1),
+    m('seq3','🔥','3 dias seguidos',seq,3),
+    m('seq7','☄️','7 dias seguidos',seq,7),
+    m('pag100','💯','100 páginas',e.pag,100),
+    m('pag500','🏔️','500 páginas',e.pag,500),
+    m('en50','🇺🇸','50 páginas em inglês',e.pagEn,50),
+    m('en200','🗽','200 páginas em inglês',e.pagEn,200),
+    m('term1','🏁','Terminou um livro',e.term,1),
+    m('term5','🏆','5 livros terminados',e.term,5),
+    m('perf','⭐','Quiz perfeito (3 de 3)',e.perfeito?1:0,1),
+    m('quiz7','🧠','7 quizzes feitos',e.quizzes,7),
+    m('pal10','🔤','10 palavras novas',e.palavras,10),
+    m('pal30','📒','30 palavras novas',e.palavras,30),
+    m('min60','⏱️','60 minutos no cronômetro',e.min,60),
+    m('min300','⌛','300 minutos no cronômetro',e.min,300),
+    m('arte','🎨','Desenhou um livro terminado',e.desenhos,1)
+  ];
+}
+function sequenciaMax(){
+  const dias=[...new Set(u().leituras.map(l=>l.data))].sort(); let best=0, cur=0, ant=null;
+  dias.forEach(d=>{ const dt=new Date(d+'T12:00'); if(ant && (dt-ant)/864e5<1.5) cur++; else cur=1; best=Math.max(best,cur); ant=dt; });
+  return best;
+}
+function checarMedalhas(){
+  const novas=listaMedalhas().filter(m=>m.ok && !u().medalhasVistas.includes(m.id));
+  if(novas.length){ novas.forEach(m=>u().medalhasVistas.push(m.id)); salvar(); }
+  return novas;
+}
+
+function montarExtrasPainel(){
+  const ni=nivelInfo();
+  document.getElementById('nivel-nome').textContent=`Nível ${ni.nivel} · ${ni.nome}`;
+  document.getElementById('xp-enche').style.width=ni.pct+'%';
+  document.getElementById('xp-txt').textContent = ni.prox ? `${ni.xp} XP · faltam ${ni.prox.xp-ni.xp} para ganhar ${ni.prox.premio}` : `${ni.xp} XP · nível máximo! 👑`;
+  const novas=checarMedalhas();
+  if(novas.length){
+    document.getElementById('balao-painel').textContent=`Medalha nova: ${novas.map(m=>m.em+' '+m.nome).join(', ')}! 🎉`;
+    mascote('m-painel','uau',true); confete();
+  }
+}
+function montarMedalhas(){
+  const ni=nivelInfo(), ms=listaMedalhas(), ok=ms.filter(m=>m.ok).length;
+  mascote('m-medalhas', 'uau');
+  document.getElementById('balao-medalhas').textContent = ni.prox ? `Você está no nível ${ni.nivel}! Com mais ${ni.prox.xp-ni.xp} XP eu ganho ${ni.prox.premio}!` : 'Nível máximo! Olha minha coroa! 👑';
+  document.getElementById('medalhas-caixa').innerHTML=`
+    <h2>🏅 Minhas medalhas (${ok}/${ms.length})</h2>
+    <div class="medalhas">${ms.map(m=>`<div class="medalha ${m.ok?'':'bloq'}"><div class="em">${m.em}</div><b>${m.nome}</b><small>${m.ok?'Conquistada!':m.prog}</small></div>`).join('')}</div>
+    <h2 style="margin-top:16px">🦉 Prêmios da Lili</h2>
+    <p>Ganhe XP lendo páginas (1 XP cada), terminando livros (30), estrelas no quiz (5), palavras novas (3) e minutos de cronômetro (1 a cada 5).</p>
+    ${NIVEIS.map((v,i)=>`<div class="q-item"><div><b>Nível ${i+1} · ${v.nome}</b><br><small>${v.xp} XP · prêmio: ${v.premio}</small></div><span style="font-size:1.4rem">${ni.nivel>i?'✅':'🔒'}</span></div>`).join('')}`;
+}
+
+/* ============ CRONÔMETRO ============ */
+let crono={alvo:15*60, acumulado:0, inicio:null, timer:null, livro:null};
+let registroPendente=null;
+function montarCrono(){
+  const livros=u().livros.filter(l=>l.status==='lendo'), sel=document.getElementById('c-livro');
+  sel.innerHTML = livros.length ? livros.map(l=>`<option value="${l.id}">${l.idioma==='en'?'🇺🇸':'🇧🇷'} ${esc(l.titulo)}</option>`).join('') : '<option value="">Nenhum livro em leitura</option>';
+  if(crono.livro && livros.some(l=>l.id===crono.livro)) sel.value=crono.livro;
+  if(!crono.inicio && !crono.acumulado){ document.getElementById('balao-crono').textContent='Escolha o livro e o tempo. Quando der o sinal, eu comemoro com você! ⏱️'; mascote('m-crono','feliz'); }
+  desenharCrono();
+}
+function segundosLidos(){ return crono.acumulado + (crono.inicio ? (Date.now()-crono.inicio)/1000 : 0); }
+function desenharCrono(){
+  const s=segundosLidos(), rest=Math.max(0,crono.alvo-s), pct=Math.min(1,s/crono.alvo);
+  const mm=String(Math.floor(rest/60)).padStart(2,'0'), ss=String(Math.floor(rest%60)).padStart(2,'0');
+  document.getElementById('c-tempo').textContent=`${mm}:${ss}`;
+  document.getElementById('c-anel').style.strokeDashoffset = 597*(1-pct);
+  document.getElementById('c-iniciar').textContent = crono.inicio ? '⏸️ Pausar' : (s>0 ? '▶️ Continuar' : '▶️ Começar');
+  document.querySelectorAll('#c-tempos .idioma').forEach(b=>{ b.classList.toggle('sel', +b.dataset.min*60===crono.alvo); b.disabled = s>0; });
+  if(crono.inicio && s>=crono.alvo) fimCrono(true);
+}
+function bip(){ try{ const ac=new (window.AudioContext||window.webkitAudioContext)(); [0,.25,.5].forEach((t,i)=>{ const o=ac.createOscillator(), g=ac.createGain(); o.frequency.value=[660,880,1100][i]; o.connect(g); g.connect(ac.destination); g.gain.setValueAtTime(.2,ac.currentTime+t); g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+t+.22); o.start(ac.currentTime+t); o.stop(ac.currentTime+t+.24); }); }catch(e){} }
+document.querySelectorAll('#c-tempos .idioma').forEach(b=>b.onclick=()=>{ crono.alvo=+b.dataset.min*60; desenharCrono(); });
+document.getElementById('c-iniciar').onclick=()=>{
+  if(!document.getElementById('c-livro').value){ ir('adicionar'); return; }
+  crono.livro=document.getElementById('c-livro').value;
+  if(crono.inicio){ crono.acumulado=segundosLidos(); crono.inicio=null; clearInterval(crono.timer); document.getElementById('balao-crono').textContent='Pausado. Respira e volta quando quiser! 😊'; mascote('m-crono','pensa'); }
+  else { crono.inicio=Date.now(); crono.timer=setInterval(desenharCrono,250); document.getElementById('balao-crono').textContent='Shhh... hora de ler! Eu fico de olho no tempo. 🤫📖'; mascote('m-crono','feliz',true); }
+  desenharCrono();
+};
+document.getElementById('c-terminar').onclick=()=>{ if(segundosLidos()>=30) fimCrono(false); else { pararCrono(); desenharCrono(); toast('Leia um pouquinho mais antes de terminar 😉'); } };
+function pararCrono(){ clearInterval(crono.timer); crono.inicio=null; crono.acumulado=0; }
+function fimCrono(completo){
+  const min=Math.max(1,Math.round(segundosLidos()/60)); const livro=crono.livro;
+  pararCrono();
+  if(completo){ bip(); confete(); }
+  document.getElementById('balao-crono').textContent = completo ? `Tempo! Você leu ${min} minutos sem parar! 🎉` : `Muito bem! ${min} minutos de leitura! 👏`;
+  mascote('m-crono','uau',true);
+  registroPendente={livro, minutos:min};
+  setTimeout(()=>{ ir('registrar'); document.getElementById('balao-registrar').textContent=`Você leu ${min} minutos! Quantas páginas foram? 📖`; },1600);
+}
+
+/* ============ CADERNO DE PALAVRAS ============ */
+let langPalavra='en', flash=null;
+function montarPalavras(){
+  const us=u(), sel=document.getElementById('w-livro');
+  sel.innerHTML='<option value="">— nenhum —</option>'+us.livros.filter(l=>l.status!=='quero').map(l=>`<option value="${l.id}">${esc(l.titulo)}</option>`).join('');
+  ['w-palavra','w-significado'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('w-erro').textContent='';
+  marcarIdioma(document.getElementById('w-idiomas'),langPalavra);
+  document.getElementById('balao-palavras').textContent = us.palavras.length>=3 ? 'Suas palavras aparecem como bônus no Quiz Diário! Que tal treinar com os cartões? 🃏' : 'Achou uma palavra nova no livro? Anota aqui pra não esquecer! ✏️';
+  mascote('m-palavras','feliz');
+  flash=null; listarPalavras();
+}
+function listarPalavras(){
+  const us=u(), cx=document.getElementById('w-lista');
+  if(flash){ mostrarFlash(); return; }
+  const lista=[...us.palavras].reverse();
+  cx.innerHTML=`<h2>📒 Meu caderno (${lista.length})</h2>
+    ${lista.length>=2?'<button class="btn azul" id="w-treinar">🃏 Treinar com cartões</button>':''}
+    ${lista.length?lista.map(p=>`<div class="q-item"><div><b>${p.idioma==='en'?'🇺🇸':'🇧🇷'} ${esc(p.palavra)}</b> = ${esc(p.significado)}<br><small>${fmtData(p.criado)}${p.livro?' · '+esc((us.livros.find(l=>l.id===p.livro)||{}).titulo||''):''}${p.acertos?` · sabia ${p.acertos}x`:''}</small></div><button class="btn peq branco" data-delw="${p.id}">🗑️</button></div>`).join('')
+      :'<div class="vazio">Nenhuma palavra ainda.</div>'}`;
+  const bt=document.getElementById('w-treinar'); if(bt) bt.onclick=()=>{ const ps=[...us.palavras].sort(()=>Math.random()-.5).slice(0,10); flash={lista:ps,i:0,virado:false,sabia:0}; mostrarFlash(); };
+  cx.querySelectorAll('[data-delw]').forEach(b=>b.onclick=()=>{ us.palavras=us.palavras.filter(p=>p.id!==b.dataset.delw); salvar(); listarPalavras(); });
+}
+function mostrarFlash(){
+  const cx=document.getElementById('w-lista');
+  if(flash.i>=flash.lista.length){
+    cx.innerHTML=`<h2>🃏 Treino concluído!</h2><div class="estrelas">${'⭐'.repeat(Math.round(flash.sabia/flash.lista.length*3))||'💪'}</div>
+      <p style="text-align:center;font-weight:800">Você sabia ${flash.sabia} de ${flash.lista.length} palavras</p><button class="btn verde" id="w-fim">Voltar ao caderno</button>`;
+    document.getElementById('balao-palavras').textContent = flash.sabia===flash.lista.length ? 'Sabia todas! Que memória! 🧠✨' : 'Treinar sempre ajuda a lembrar! 💜';
+    mascote('m-palavras','uau',true); if(flash.sabia===flash.lista.length) confete();
+    document.getElementById('w-fim').onclick=()=>{ flash=null; listarPalavras(); };
+    return;
+  }
+  const p=flash.lista[flash.i];
+  cx.innerHTML=`<h2>🃏 Cartão ${flash.i+1} de ${flash.lista.length}</h2>
+    <div class="flash ${flash.virado?'virado':''}" id="w-cartao">${flash.virado?esc(p.significado):(p.idioma==='en'?'🇺🇸 ':'🇧🇷 ')+esc(p.palavra)}<small>${flash.virado?esc(p.palavra):'Toque para virar'}</small></div>
+    ${flash.virado?'<div class="grid2"><button class="btn verde" id="w-sabia">😄 Sabia!</button><button class="btn rosa" id="w-nao">🤔 Ainda não</button></div>':''}
+    <button class="btn branco" id="w-sair" style="font-size:1rem">Parar treino</button>`;
+  document.getElementById('w-cartao').onclick=()=>{ flash.virado=!flash.virado; mostrarFlash(); };
+  document.getElementById('w-sair').onclick=()=>{ flash=null; listarPalavras(); };
+  if(flash.virado){
+    document.getElementById('w-sabia').onclick=()=>{ p.acertos=(p.acertos||0)+1; flash.sabia++; salvar(); flash.i++; flash.virado=false; mostrarFlash(); };
+    document.getElementById('w-nao').onclick=()=>{ p.erros=(p.erros||0)+1; salvar(); flash.i++; flash.virado=false; mostrarFlash(); };
+  }
+}
+document.querySelectorAll('#w-idiomas .idioma').forEach(b=>b.onclick=()=>{ langPalavra=b.dataset.lang; marcarIdioma(document.getElementById('w-idiomas'),langPalavra); });
+document.getElementById('w-salvar').onclick=()=>{
+  const palavra=document.getElementById('w-palavra').value.trim(), significado=document.getElementById('w-significado').value.trim();
+  if(!palavra||!significado){ document.getElementById('w-erro').textContent='Escreva a palavra e o que ela significa ✏️'; mascote('m-palavras','ops',true); return; }
+  u().palavras.push({id:id(), palavra, significado, idioma:langPalavra, livro:document.getElementById('w-livro').value||null, criado:hojeISO(), acertos:0});
+  salvar(); toast('Palavra anotada! 🔤');
+  document.getElementById('balao-palavras').textContent=`"${palavra}" agora é sua! 🎉`; mascote('m-palavras','uau',true);
+  ['w-palavra','w-significado'].forEach(i=>document.getElementById(i).value=''); document.getElementById('w-erro').textContent='';
+  listarPalavras();
+};
+function gerarBonus(){
+  const ps=u().palavras; if(ps.length<3) return null;
+  const rnd=seedDoDia(99), ord=[...ps].sort((a,b)=>(a.acertos||0)-(b.acertos||0));
+  const alvo=ord[Math.floor(rnd()*Math.min(ord.length,4))];
+  const outros=ps.filter(p=>p.id!==alvo.id && p.significado.toLowerCase()!==alvo.significado.toLowerCase()).sort(()=>rnd()-.5).slice(0,2);
+  if(outros.length<2) return null;
+  const ops=[alvo,...outros].sort(()=>rnd()-.5);
+  return {p:`Palavra bônus! O que significa "${alvo.palavra}"?`, o:ops.map(x=>x.significado), c:ops.indexOf(alvo), alvo:alvo.id};
+}
+
+/* ============ QUERO LER ============ */
+function montarQuero(){
+  const us=u(), lista=us.livros.filter(l=>l.status==='quero');
+  mascote('m-quero','feliz');
+  document.getElementById('balao-quero').textContent = lista.length ? 'Que lista linda! Qual vai ser a próxima aventura? 🌟' : 'Quais livros você quer ler? Coloque aqui pra não esquecer! 🌟';
+  document.getElementById('quero-caixa').innerHTML=`<h2>🌟 Quero ler (${lista.length})</h2>
+    <button class="btn" id="q-novo">➕ Adicionar à lista</button>
+    ${lista.length?lista.map(l=>`<div class="q-item" style="align-items:center"><div class="capa-preview" style="width:56px;height:76px;font-size:1.5rem;${l.capa?`background-image:url(${l.capa})`:''}">${l.capa?'':'📗'}</div>
+      <div style="flex:1"><b>${esc(l.titulo)}</b><br><small>${esc(l.autor)} ${l.idioma==='en'?'🇺🇸':'🇧🇷'}</small></div>
+      <div style="display:flex;flex-direction:column;gap:6px"><button class="btn peq verde" data-comecar="${l.id}">Comecei! 📖</button><button class="btn peq branco" data-delq="${l.id}">🗑️</button></div></div>`).join('')
+      :'<div class="vazio">A lista está vazia.</div>'}`;
+  document.getElementById('q-novo').onclick=()=>{ ir('adicionar'); statusLivro='quero'; marcarStatus(); };
+  document.querySelectorAll('[data-comecar]').forEach(b=>b.onclick=()=>{ const l=us.livros.find(x=>x.id===b.dataset.comecar); l.status='lendo'; l.comecou=hojeISO(); salvar(); confete(); toast('Boa leitura! 📖'); montarQuero(); });
+  document.querySelectorAll('[data-delq]').forEach(b=>b.onclick=()=>{ if(!confirm('Tirar este livro da lista?')) return; us.livros=us.livros.filter(x=>x.id!==b.dataset.delq); salvar(); montarQuero(); });
+}
+let statusLivro='lendo';
+function marcarStatus(){ document.querySelectorAll('#a-status .idioma').forEach(b=>b.classList.toggle('sel',b.dataset.st===statusLivro)); }
+document.querySelectorAll('#a-status .idioma').forEach(b=>b.onclick=()=>{ statusLivro=b.dataset.st; marcarStatus(); });
+
+/* ============ TERMINEI O LIVRO + CERTIFICADO ============ */
+function blocoTerminado(l){
+  if(l.status==='terminado') return `<div class="resp" style="background:#fff3c4"><b>🏁 Terminado em ${fmtData(l.terminadoEm)}</b>
+    <div style="font-size:1.6rem">${'⭐'.repeat(l.estrelas||0)}${'☆'.repeat(5-(l.estrelas||0))}</div>${l.opiniao?esc(l.opiniao):''}
+    ${l.desenho?`<img src="${l.desenho}" alt="desenho" style="width:100%;border:3px solid var(--tinta);border-radius:12px;margin-top:8px">`:''}</div>
+    <button class="btn" id="b-cert">🎓 Ver certificado</button>`;
+  if(l.status==='lendo') return '<button class="btn verde" id="b-terminei">🏁 Terminei o livro!</button>';
+  return '';
+}
+function ligarTerminado(l){
+  const bt=document.getElementById('b-terminei'); if(bt) bt.onclick=()=>abrirTerminei(l.id);
+  const bc=document.getElementById('b-cert'); if(bc) bc.onclick=()=>abrirCertificado(l.id);
+}
+let termLivro=null, termEstrelas=0, corPincel='#2d2250', desenhou=false;
+function abrirTerminei(idl){
+  termLivro=idl; termEstrelas=0; desenhou=false; ir('terminei');
+  const l=u().livros.find(x=>x.id===idl);
+  document.getElementById('t-titulo').textContent=`🏁 ${l.titulo}`;
+  document.getElementById('t-opiniao').value='';
+  document.getElementById('balao-terminei').textContent='PARABÉNS! Você terminou o livro inteirinho! Me conta o que achou? 🎉';
+  mascote('m-terminei','uau',true); confete();
+  pintarEstrelas(); prepararCanvas();
+}
+function pintarEstrelas(){ document.querySelectorAll('#t-estrelas button').forEach((b,i)=>b.textContent=i<termEstrelas?'⭐':'☆'); }
+document.querySelectorAll('#t-estrelas button').forEach((b,i)=>b.onclick=()=>{ termEstrelas=i+1; pintarEstrelas();
+  document.getElementById('balao-terminei').textContent=['Hmm, não gostou muito? Tudo bem!','Mais ou menos, né?','Legalzinho!','Gostou bastante! 😄','AMOU! Livro nota 5! 🤩'][i]; });
+function prepararCanvas(){
+  const cv=document.getElementById('t-canvas'), dpr=window.devicePixelRatio||1;
+  cv.width=cv.clientWidth*dpr; cv.height=cv.clientHeight*dpr;
+  const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); g.fillStyle='#fff'; g.fillRect(0,0,cv.width,cv.height);
+  g.lineCap='round'; g.lineJoin='round';
+  let pintando=false;
+  const pos=e=>{ const r=cv.getBoundingClientRect(), t=e.touches?e.touches[0]:e; return [t.clientX-r.left, t.clientY-r.top]; };
+  const ini=e=>{ e.preventDefault(); pintando=true; const [x,y]=pos(e); g.beginPath(); g.moveTo(x,y); g.lineTo(x+.1,y+.1); traco(); };
+  const mov=e=>{ if(!pintando) return; e.preventDefault(); const [x,y]=pos(e); g.lineTo(x,y); traco(); };
+  const traco=()=>{ g.strokeStyle=corPincel; g.lineWidth=corPincel==='#ffffff'?22:6; g.stroke(); desenhou=true; };
+  const fim=()=>{ pintando=false; };
+  cv.onmousedown=ini; cv.onmousemove=mov; window.addEventListener('mouseup',fim);
+  cv.ontouchstart=ini; cv.ontouchmove=mov; cv.ontouchend=fim;
+}
+document.querySelectorAll('#t-paleta button[data-cor]').forEach(b=>b.onclick=()=>{ corPincel=b.dataset.cor; document.querySelectorAll('#t-paleta button').forEach(x=>x.classList.toggle('sel',x===b)); });
+document.getElementById('t-limpar').onclick=()=>{ desenhou=false; prepararCanvas(); };
+document.getElementById('t-voltar').onclick=()=>abrirLivro(termLivro);
+document.getElementById('t-salvar').onclick=()=>{
+  if(!termEstrelas){ document.getElementById('balao-terminei').textContent='Toque nas estrelas para dar uma nota ao livro! ⭐'; mascote('m-terminei','ops',true); return; }
+  const l=u().livros.find(x=>x.id===termLivro);
+  l.status='terminado'; l.terminadoEm=hojeISO(); l.estrelas=termEstrelas; l.opiniao=document.getElementById('t-opiniao').value.trim();
+  if(desenhou){
+    const cv=document.getElementById('t-canvas'), c2=document.createElement('canvas'); c2.width=360; c2.height=Math.round(360*cv.height/cv.width);
+    c2.getContext('2d').drawImage(cv,0,0,c2.width,c2.height); l.desenho=c2.toDataURL('image/jpeg',.7);
+  }
+  try{ salvar(); }catch(e){ l.desenho=null; salvar(); }
+  abrirCertificado(l.id);
+};
+function abrirCertificado(idl){
+  const l=u().livros.find(x=>x.id===idl); ir('certificado');
+  document.getElementById('certificado').innerHTML=`
+    <div class="cert-lili">${mascoteSVG('uau', nivelInfo().nivel)}</div>
+    <div class="cert-titulo">Certificado de Leitura</div>
+    <p>Certificamos que</p><div class="cert-nome">${esc(atual)}</div>
+    <p>leu o livro inteirinho</p><div class="cert-livro">“${esc(l.titulo)}”</div><p>de ${esc(l.autor)}</p>
+    <div style="font-size:2rem;margin:6px 0">${'⭐'.repeat(l.estrelas||0)}</div>
+    ${l.desenho?`<img src="${l.desenho}" alt="desenho" style="max-width:240px;width:70%;border:3px solid var(--tinta);border-radius:12px">`:''}
+    <p style="margin-top:10px"><b>${fmtData(l.terminadoEm)}</b></p>
+    <div class="cert-ass">Lili, a Coruja Leitora 🦉</div>`;
+  confete();
+}
+document.getElementById('cert-imprimir').onclick=()=>window.print();
+document.getElementById('cert-voltar').onclick=()=>ir('painel');
+
+/* ============ RESUMO PARA OS PAIS ============ */
+let semanaResumo=0;
+function gatePin(cx, onOk){
+  const user=u();
+  if(paisLiberado){ onOk(); return; }
+  const novo=!user.pinPais;
+  cx.innerHTML=`<h2>👨‍👩‍👦 Área dos pais</h2>
+    <p>${novo?'Crie uma senha dos pais (4 números), diferente da senha da criança.':'Digite a senha dos pais.'}</p>
+    <input type="password" id="pin-pais2" inputmode="numeric" maxlength="4" placeholder="••••">
+    <div class="erro" id="pin-erro2"></div><button class="btn rosa" id="pin-ok2">${novo?'Criar senha':'Entrar'}</button>`;
+  document.getElementById('pin-ok2').onclick=()=>{
+    const v=document.getElementById('pin-pais2').value.trim(), er=document.getElementById('pin-erro2');
+    if(!/^\d{4}$/.test(v)){ er.textContent='Use 4 números.'; return; }
+    if(novo){ if(v===user.senha){ er.textContent='Use uma senha diferente da criança.'; return; } user.pinPais=v; salvar(); }
+    else if(v!==user.pinPais){ er.textContent='Senha incorreta.'; return; }
+    paisLiberado=true; onOk();
+  };
+}
+function montarResumo(){
+  const cx=document.getElementById('resumo-caixa');
+  gatePin(cx, ()=>{
+    const us=u(), ini=inicioSemana(); ini.setDate(ini.getDate()-7*semanaResumo);
+    const dias=diasDaSemana(ini), set=new Set(dias), fimS=dias[6];
+    const leit=us.leituras.filter(l=>set.has(l.data));
+    const pt=leit.filter(l=>l.idioma!=='en').reduce((s,l)=>s+l.paginas,0), en=leit.filter(l=>l.idioma==='en').reduce((s,l)=>s+l.paginas,0);
+    const min=leit.reduce((s,l)=>s+(l.minutos||0),0), diasLidos=new Set(leit.map(l=>l.data));
+    const term=us.livros.filter(l=>l.terminadoEm && set.has(l.terminadoEm));
+    const qz=Object.entries(us.quiz).filter(([d])=>set.has(d)).map(([,q])=>q);
+    const resp=us.respostas.filter(r=>set.has(r.data)), pal=us.palavras.filter(p=>set.has(p.criado));
+    const nomeLivro=idl=>(us.livros.find(l=>l.id===idl)||{}).titulo||'';
+    const nomes=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+    cx.innerHTML=`<h2>📊 Resumo de ${esc(atual)}</h2>
+      <div class="grid2" style="margin-top:0"><button class="btn peq ${semanaResumo===0?'':'branco'}" data-sem="0">Esta semana</button><button class="btn peq ${semanaResumo===1?'':'branco'}" data-sem="1">Semana passada</button></div>
+      <p style="margin-top:8px"><b>${fmtData(dias[0])} a ${fmtData(fimS)}</b></p>
+      <div class="stats" style="margin:10px 0">
+        <div class="stat" style="background:#fff3c4"><b>${pt+en}</b><span>páginas<br>🇧🇷 ${pt} · 🇺🇸 ${en}</span></div>
+        <div class="stat" style="background:#d9f1ff"><b>${min}</b><span>minutos no cronômetro</span></div>
+        <div class="stat" style="background:#ffe0ee"><b>${diasLidos.size}/7</b><span>dias com leitura</span></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px">${dias.map((d,i)=>`<div style="text-align:center;font-weight:700"><div style="font-size:1.5rem">${diasLidos.has(d)?'✅':'⚪'}</div>${nomes[i]}</div>`).join('')}</div>
+      <p>🏁 <b>Livros terminados:</b> ${term.length?term.map(l=>`${esc(l.titulo)} (${'⭐'.repeat(l.estrelas||0)})`).join(', '):'nenhum'}</p>
+      <p>🧠 <b>Quiz:</b> ${qz.length} feito(s)${qz.length?`, média de ${(qz.reduce((s,q)=>s+q.acertos,0)/qz.length).toFixed(1)} de 3 estrelas`:''}</p>
+      <p>🔤 <b>Palavras novas:</b> ${pal.length?pal.map(p=>`${esc(p.palavra)} (${esc(p.significado)})`).join(', '):'nenhuma'}</p>
+      <h2 style="margin-top:12px">✍️ Respostas escritas</h2>
+      ${resp.length?resp.map(r=>`<div class="resp"><small>${fmtData(r.data)} · ${esc(nomeLivro(r.livro))}</small><b>${esc(r.p)}</b>${esc(r.r)}</div>`).join(''):'<div class="vazio">Nenhuma resposta escrita nesta semana.</div>'}
+      <h2 style="margin-top:12px">📘 Perguntas por livro</h2>
+      ${us.livros.filter(l=>l.status!=='quero').map(l=>`<div class="q-item" style="align-items:center"><div><b>${esc(l.titulo)}</b><br><small>${(l.perguntas||[]).length} pergunta(s)</small></div><button class="btn peq" data-perg="${l.id}">Editar</button></div>`).join('')||'<div class="vazio">Nenhum livro ainda.</div>'}`;
+    cx.querySelectorAll('[data-sem]').forEach(b=>b.onclick=()=>{ semanaResumo=+b.dataset.sem; montarResumo(); });
+    cx.querySelectorAll('[data-perg]').forEach(b=>b.onclick=()=>abrirPais(b.dataset.perg));
+  });
+}
+
+
+/* ============ DIÁRIO DO DIA (trava do registro) ============ */
+// Para registrar a leitura de um dia, o último dia com leitura antes dele precisa ter diário escrito
+// (uma resposta escrita no Quiz Diário daquele dia ou o "Diário do dia").
+function temDiario(dia){ return (u().respostas||[]).some(r=>r.data===dia && r.r && r.r.trim()); }
+function diarioPendente(dataAlvo){
+  const dias=[...new Set(u().leituras.map(l=>l.data))].filter(d=>d<dataAlvo).sort();
+  const ult=dias.pop();
+  return (ult && !temDiario(ult)) ? ult : null;
+}
+function atualizarAvisoDiario(){
+  const box=document.getElementById('r-diario'); if(!box || !atual) return;
+  const pend=diarioPendente(document.getElementById('r-data').value||hojeISO());
+  const bt=document.getElementById('btn-registrar');
+  if(!pend){ box.innerHTML=''; bt.disabled=false; bt.style.opacity=1; return; }
+  bt.disabled=true; bt.style.opacity=.5;
+  box.innerHTML=`<div class="resp" style="background:#fff3c4;margin-top:14px"><b>✍️ Falta o diário de ${fmtData(pend)}</b>Antes de registrar a leitura nova, conte no diário o que você leu nesse dia.</div>
+    <button class="btn rosa" id="r-ir-diario">✍️ Escrever o diário de ${fmtData(pend)}</button>`;
+  document.getElementById('r-ir-diario').onclick=()=>abrirDiarioDia(pend);
+  document.getElementById('balao-registrar').textContent=`Opa! Primeiro me conta como foi a leitura de ${fmtData(pend)} no diário. 📓`;
+  mascote('m-registrar','pensa');
+}
+document.getElementById('r-data').addEventListener('change',atualizarAvisoDiario);
+let diarioDia=null;
+function abrirDiarioDia(dia){
+  diarioDia=dia; ir('diario');
+  const us=u(), idsLivros=[...new Set(us.leituras.filter(l=>l.data===dia).map(l=>l.livro))];
+  const livros=idsLivros.map(i=>us.livros.find(l=>l.id===i)).filter(Boolean);
+  const nomes=livros.map(l=>'“'+esc(l.titulo)+'”').join(' e ')||'seu livro';
+  document.getElementById('balao-diario').textContent='Me conta com suas palavras. Pode escrever do jeitinho que lembrar! ✏️';
+  mascote('m-diario','feliz');
+  const nomesRaw=livros.map(l=>'“'+l.titulo+'”').join(' e ')||'seu livro';
+  const perguntas=[`O que aconteceu na parte de ${nomesRaw} que você leu?`,'Qual foi a parte mais legal, ou o que você sentiu lendo?'];
+  document.getElementById('diario-caixa').innerHTML=`<h2>📓 Diário de ${fmtData(dia)}</h2>
+    <p>Livro: <b>${nomes}</b></p>
+    ${perguntas.map((p,i)=>`<label for="d-r${i}">${esc(p)}</label><textarea id="d-r${i}" placeholder="Escreva pelo menos uma frase..."></textarea>`).join('')}
+    <div class="erro" id="d-erro"></div>
+    <button class="btn verde" id="d-salvar">Guardar no diário 📓</button>`;
+  document.getElementById('d-salvar').onclick=()=>{
+    const txt=[0,1].map(i=>document.getElementById('d-r'+i).value.trim());
+    if(txt.some(t=>t.split(/\s+/).filter(Boolean).length<5)){
+      document.getElementById('d-erro').textContent='Escreva pelo menos 5 palavras em cada resposta ✏️';
+      document.getElementById('balao-diario').textContent='Conta um pouquinho mais? Quem? O quê? Por quê? 🔍'; mascote('m-diario','ops',true); return;
+    }
+    us.respostas=us.respostas||[];
+    const livroId=(livros[0]||{}).id||null;
+    perguntas.forEach((p,i)=>us.respostas.push({data:dia, livro:livroId, p, r:txt[i], tipo:'diario'}));
+    salvar(); confete(); toast('Diário guardado! 📓');
+    document.getElementById('balao-diario').textContent='Que diário caprichado! Agora pode registrar a leitura nova. 🎉'; mascote('m-diario','uau',true);
+    setTimeout(()=>{ ir('registrar'); },1500);
+  };
 }
 
 /* ============ INÍCIO ============ */
