@@ -233,9 +233,15 @@
   .btn-musica.tocando{background:#fff3c4;animation:balanca 1.6s ease-in-out infinite}
   .btn-musica.mudo{opacity:.75}
   @keyframes balanca{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+  .btn-idioma{position:fixed;bottom:16px;left:78px;z-index:25;height:52px;min-width:52px;border-radius:26px;
+    border:3px solid var(--tinta);background:#fff;font-size:1.4rem;cursor:pointer;box-shadow:0 4px 0 var(--tinta);
+    display:flex;align-items:center;justify-content:center;gap:2px;padding:0 10px;font-family:inherit}
+  .btn-idioma small{font-size:.8rem;font-weight:800;color:var(--tinta)}
+  html.ui-en .pergunta small{display:none}
 </style>
 </head>
 <body>
+<button id="btn-idioma" class="btn-idioma" aria-label="Português / English" onclick="alternarIdioma()">🇧🇷<small>PT</small></button>
 <button id="btn-musica" class="btn-musica mudo" aria-label="Ligar ou desligar a música" onclick="alternarMusica()">🔇</button>
 <div class="app">
 
@@ -1658,6 +1664,262 @@ function alternarMusica(){
     else if(musica.ligada){ iniciarMusica(); }
   });
 })();
+/* ============ IDIOMA DA PÁGINA (PT ⇄ EN) ============ */
+// Traduz a tela depois de montada: os dados continuam iguais, só o texto muda.
+const IDIOMA_KEY='leituraDivertida_idioma';
+let idiomaUI='pt';
+try{ idiomaUI=localStorage.getItem(IDIOMA_KEY)==='en'?'en':'pt'; }catch(e){}
+const EN={
+'(opcional)':'(optional)',
+', a coruja leitora! Vamos ler juntos? 🦉':', the reading owl! Shall we read together? 🦉',
+'. Para recuperar em outro aparelho, use “Restaurar”.':'. To recover it on another device, use “Restore”.',
+'Adicionar Livro':'Add Book','Anotar palavra ✏️':'Save word ✏️','Autor':'Author','Borracha':'Eraser','Capa do livro':'Book cover',
+'Colocar na estante 📚':'Put it on the shelf 📚','Conta pra mim: o que você leu hoje?':'Tell me: what did you read today?',
+'De qual livro? (opcional)':'Which book? (optional)','Desafio de 10 a 30 minutos':'A 10 to 30 minute challenge',
+'Desenhe sua parte favorita 🎨':'Draw your favorite part 🎨','Em que idioma?':'In which language?','Entrar 🚀':'Log in 🚀',
+'Escolha seu avatar':'Choose your avatar','Estou lendo':"I'm reading",'Eu gostei porque...':'I liked it because...',
+'Ex.: 15':'E.g. 15','Ex.: Antoine de Saint-Exupéry':'E.g. Antoine de Saint-Exupéry','Ex.: O Pequeno Príncipe':'E.g. The Little Prince',
+'Ex.: Pedro':'E.g. Pedro','Ex.: brave':'E.g. brave','Ex.: corajoso':'E.g. corajoso','Ganhar meu certificado 🎓':'Get my certificate 🎓',
+'Histórico':'History','Idioma da palavra':'Word language','Idioma do livro':'Book language','Leitor':'Reader',
+'Leitura Divertida com a Lili':'Fun Reading with Lili','Ler com Cronômetro':'Read with Timer','Ligar ou desligar a música':'Turn the music on or off',
+'Limpar':'Clear','Medalhas':'Medals','Meu mês':'My month','Minha estante 📚':'My bookshelf 📚','Minutos lendo (opcional)':'Minutes reading (optional)',
+'O que significa?':'What does it mean?','O que você achou da história?':'What did you think of the story?','Oba, livro novo! Qual é?':'Yay, a new book! Which one?',
+'Oi! Eu sou a':"Hi! I'm",'Olá,':'Hello,','Onde vai o livro?':'Where does the book go?','Palavra':'Word','Palavras':'Words',
+'Português':'Portuguese','Pronto para o desafio de hoje?':"Ready for today's challenge?",'Páginas lidas':'Pages read','Qual livro?':'Which book?',
+'Quando?':'When?','Quantas páginas você leu?':'How many pages did you read?','Quanto tempo?':'How long?','Que bom te ver!':'So good to see you!',
+'Que nota você dá para o livro?':'What rating do you give the book?','Quem está lendo hoje?':"Who's reading today?",'Quero Ler':'Want to Read','Quero ler':'Want to read',
+'Quiz Diário':'Daily Quiz','Registrar Leitura':'Log Reading','Sair 👋':'Log out 👋','Salvar em Arquivos':'Save to Files','Salvar leitura ⭐':'Save reading ⭐',
+'Salve um arquivo com todos os cadastros (livros, leituras, quizzes e respostas). No iPad, escolha':'Save a file with everything (books, readings, quizzes and answers). On the iPad, choose',
+'Senha secreta (4 números)':'Secret password (4 numbers)','Seu nome':'Your name','Toque para escolher':'Tap to choose','Título':'Title',
+'Você entendeu a história?':'Did you understand the story?','dias seguidos':'days in a row','livros':'books','páginas no mês':'pages this month',
+'uma foto da capa':'a photo of the cover','Área dos pais':"Parents' area",'▶️ Começar':'▶️ Start','➕ Adicionar Livro':'➕ Add Book','⬅ Voltar':'⬅ Back',
+'🇧🇷 Português':'🇧🇷 Portuguese','🇺🇸 Inglês':'🇺🇸 English','🎯 Meta':'🎯 Goal','🏁 Terminei de ler':'🏁 I finished reading','🏁 Terminei!':'🏁 Finished!',
+'🏅 Medalhas ➜':'🏅 Medals ➜','🏠 Voltar ao painel':'🏠 Back to dashboard','💾 Guardar meu histórico':'💾 Save my history',
+'💾 Salvar histórico em arquivo':'💾 Save history to a file','📂 Restaurar de um arquivo':'📂 Restore from a file','📂 Trazer histórico de um arquivo':'📂 Bring history from a file',
+'📊 Exportar planilha (Numbers/Excel)':'📊 Export spreadsheet (Numbers/Excel)','📖 Registrar Leitura':'📖 Log Reading','📚 Leitura Divertida!':'📚 Fun Reading!',
+'⏱️ Ler com cronômetro':'⏱️ Read with timer','🔤 Palavra nova':'🔤 New word','🖨️ Imprimir ou salvar PDF':'🖨️ Print or save PDF',
+'Já tenho conta:':'I already have an account:','Escreva seu nome! ✏️':'Write your name! ✏️','A senha precisa ter 4 números 🔢':'The password needs 4 numbers 🔢',
+'Hmm, senha errada. Tente de novo! 🙈':'Hmm, wrong password. Try again! 🙈',
+'Vamos começar colocando seu primeiro livro na estante! 📚':"Let's start by putting your first book on the shelf! 📚",
+'UAU! Você bateu a meta do mês! Você é um super leitor! 🏆':'WOW! You reached your goal for the month! You are a super reader! 🏆',
+'Psiu! Faz tempo que você não salva seu histórico. Toque em 📜 Histórico! 💾':"Psst! You haven't saved your history in a while. Tap 📜 History! 💾",
+'Já fez o Quiz Diário? Tenho 3 perguntas pra você! 🧠':'Did you do the Daily Quiz yet? I have 3 questions for you! 🧠',
+'Cada página é uma aventura nova!':'Every page is a new adventure!','Ler em inglês e português é um superpoder! 💪':'Reading in English and Portuguese is a superpower! 💪',
+'Que tal ler mais um pouquinho hoje?':'How about reading a little more today?','Sua estante está vazia. Adicione um livro! 🙂':'Your shelf is empty. Add a book! 🙂',
+'Quantas páginas você quer ler este mês? 🎯':'How many pages do you want to read this month? 🎯','Nenhum livro ainda':'No books yet',
+'Primeiro adicione um livro na estante, tá? 📚':'First add a book to the shelf, OK? 📚','Primeiro escreva o diário do dia anterior ✍️':"First write the previous day's journal ✍️",
+'Coloque um número de páginas entre 1 e 999 🔢':'Enter a number of pages between 1 and 999 🔢','Leitura salva! ⭐':'Reading saved! ⭐','Que capa linda! 😍':'What a beautiful cover! 😍',
+'Qual é o título do livro? ✏️':"What's the book's title? ✏️",'Quem escreveu o livro? ✏️':'Who wrote the book? ✏️','A estante ficou cheia! Tente uma foto menor.':'The shelf is full! Try a smaller photo.',
+'Livro adicionado! 📚':'Book added! 📚',
+'Quem são os personagens que apareceram na parte que você leu?':'Who were the characters in the part you read?',
+'Onde a história aconteceu? Como era esse lugar?':'Where did the story happen? What was the place like?',
+'O que aconteceu de mais importante na parte que você leu?':'What was the most important thing that happened?',
+'Algum personagem teve um problema? Qual foi? Ele conseguiu resolver?':'Did a character have a problem? What was it? Did they solve it?',
+'Conte o que aconteceu com suas palavras, como se contasse para um amigo.':'Tell what happened in your own words, like telling a friend.',
+'Como o personagem principal se sentiu? Por quê?':'How did the main character feel? Why?','O que você acha que vai acontecer depois? Por quê?':'What do you think will happen next? Why?',
+'Se você estivesse na história, o que faria diferente?':'If you were in the story, what would you do differently?',
+'Quem eram os personagens?':'Who were the characters?','Onde a história aconteceu?':'Where did the story happen?','O que aconteceu de mais importante?':'What was the most important thing that happened?',
+'Algum personagem teve um problema?':'Did a character have a problem?','Conte com suas palavras.':'Tell it in your own words.','Como o personagem se sentiu? Por quê?':'How did the character feel? Why?',
+'O que vai acontecer depois?':'What will happen next?','O que você faria diferente?':'What would you do differently?',
+'Primeiro coloque um livro na estante e leia um pouquinho! 📚':'First put a book on the shelf and read a little! 📚','Adicionar livro ➕':'Add book ➕',
+'Vamos ver se você entendeu a história? Escolha o livro que leu! 🤓':"Let's see if you understood the story! Choose the book you read! 🤓",
+'🧠 Você entendeu a história?':'🧠 Did you understand the story?','Sobre qual livro?':'About which book?','Começar 🚀':'Start 🚀',
+'📘 Sobre a história':'📘 About the story','✍️ Com suas palavras':'✍️ In your own words','Escreva aqui... (pode ser em português ou inglês)':'Write here... (Portuguese or English is fine)',
+'Responder ✅':'Answer ✅','Palavra bônus ✨':'Bonus word ✨','Ver resultado 🏆':'See result 🏆','Próxima pergunta ➡️':'Next question ➡️',
+'Próxima! Pense com calma na história... 🤔':'Next one! Think calmly about the story... 🤔','Pergunta extra do seu caderno de palavras! ✨':'Extra question from your word notebook! ✨',
+'🔤 Bônus':'🔤 Bonus','Acertou o bônus! Que memória! ✨':'You got the bonus! What a memory! ✨',
+'Acertou! Você prestou atenção na história! 🎉':'Correct! You paid attention to the story! 🎉','Isso aí! Leu com atenção! ⭐':'That’s it! You read carefully! ⭐',
+'Correto! Você entendeu direitinho! 🧠':'Correct! You understood it perfectly! 🧠','Escreve alguma coisa pra mim, vai! ✏️':'Come on, write something for me! ✏️',
+'Gostei! Conta um pouquinho mais? Quem? O quê? Por quê? 🔍':'Nice! Can you tell me a bit more? Who? What? Why? 🔍',
+'Que resposta caprichada! Dá pra ver que você entendeu! 🌟':'What a great answer! I can tell you understood! 🌟','Muito bem explicado! Você é um ótimo leitor! 📚':'Very well explained! You are a great reader! 📚',
+'Adorei! Você pensou de verdade na história! 💜':'I loved it! You really thought about the story! 💜','Obrigada! Da próxima vez tenta escrever um pouquinho mais, tá? 😉':'Thanks! Next time try to write a little more, OK? 😉',
+'Essa história tem muita coisa! Que tal reler um pedacinho e tentar amanhã? 💜':'This story has a lot going on! How about rereading a bit and trying tomorrow? 💜',
+'Boa! Você lembrou de uma parte. Amanhã vai ser melhor! 🌱':'Good! You remembered part of it. Tomorrow will be even better! 🌱',
+'Muito bem! Você entendeu quase tudo! 🌟':'Great job! You understood almost everything! 🌟','PERFEITO! Você entendeu a história de verdade! 🏆':'PERFECT! You really understood the story! 🏆',
+'Você já fez o quiz de hoje! Leia mais um pouco e volte amanhã. 🌙':"You already did today's quiz! Read a little more and come back tomorrow. 🌙",
+'Resultado de hoje':"Today's result",'✨ Acertou a palavra bônus!':'✨ You got the bonus word!','Suas respostas ficam guardadas no diário do livro. ✍️':"Your answers are saved in the book's journal. ✍️",
+'Ver diário do livro 📖':"See the book's journal 📖",'Voltar ao painel 🏠':'Back to dashboard 🏠','(livro apagado)':'(book deleted)','Inglês 🇺🇸':'English 🇺🇸','Português 🇧🇷':'Portuguese 🇧🇷',
+'leituras ·':'readings ·','páginas ·':'pages ·','livros ·':'books ·','quizzes':'quizzes','Tudo':'All','📖 Leituras':'📖 Readings','➕ Livros':'➕ Books','🏁 Terminados':'🏁 Finished',
+'🧠 Quiz':'🧠 Quiz','✍️ Respostas':'✍️ Answers','🔤 Palavras':'🔤 Words','Nada por aqui ainda.':'Nothing here yet.',
+'Você ainda não salvou nenhum arquivo de histórico.':"You haven't saved a history file yet.",'Apagar esta leitura do histórico?':'Delete this reading from the history?',
+'Leitura apagada':'Reading deleted','Histórico salvo em arquivo! 💾':'History saved to a file! 💾','Histórico restaurado! ✅':'History restored! ✅',
+'Esse arquivo não é um histórico da Lili 🙈':"That file isn't a Lili history 🙈",'✍️ Diário de respostas':'✍️ Answer journal',
+'Ainda não tem respostas. Faça o Quiz Diário sobre este livro! 🧠':'No answers yet. Do the Daily Quiz about this book! 🧠',
+'👨‍👩‍👦 Área dos pais':"👨‍👩‍👦 Parents' area",'Crie uma senha dos pais (4 números), diferente da senha da criança.':"Create a parents' password (4 numbers), different from the child's password.",
+'Digite a senha dos pais.':"Enter the parents' password.",'Criar senha':'Create password','Entrar':'Log in','Use 4 números.':'Use 4 numbers.',
+'Use uma senha diferente da criança.':"Use a password different from the child's.",'Senha incorreta.':'Wrong password.',
+'Crie perguntas sobre a história com 3 opções. O quiz usa até 3 por dia; se faltar, a Lili completa com perguntas abertas de compreensão.':'Create questions about the story with 3 options. The quiz uses up to 3 a day; if there are fewer, Lili adds open comprehension questions.',
+'Pergunta':'Question','Ex.: Por que a raposa queria ser cativada?':'E.g. Why did the fox want to be tamed?','Opção A':'Option A','Opção B':'Option B','Opção C':'Option C',
+'Qual é a certa?':'Which one is right?','Salvar pergunta ➕':'Save question ➕','Nenhuma pergunta ainda.':'No questions yet.','Preencha a pergunta e as 3 opções.':'Fill in the question and the 3 options.',
+'Pergunta salva! ✅':'Question saved! ✅','Leitor Curioso':'Curious Reader','Explorador de Livros':'Book Explorer','Sábio das Páginas':'Page Sage','Herói da Leitura':'Reading Hero','Lenda da Leitura':'Reading Legend',
+'Primeiro livro na estante':'First book on the shelf','Primeira leitura':'First reading','3 dias seguidos':'3 days in a row','7 dias seguidos':'7 days in a row',
+'100 páginas':'100 pages','500 páginas':'500 pages','50 páginas em inglês':'50 pages in English','200 páginas em inglês':'200 pages in English','Terminou um livro':'Finished a book',
+'5 livros terminados':'5 books finished','Quiz perfeito (3 de 3)':'Perfect quiz (3 of 3)','7 quizzes feitos':'7 quizzes done','10 palavras novas':'10 new words','30 palavras novas':'30 new words',
+'60 minutos no cronômetro':'60 minutes on the timer','300 minutos no cronômetro':'300 minutes on the timer','Desenhou um livro terminado':'Drew a finished book',
+'Nível máximo! Olha minha coroa! 👑':'Max level! Look at my crown! 👑','🦉 Prêmios da Lili':"🦉 Lili's prizes",
+'Ganhe XP lendo páginas (1 XP cada), terminando livros (30), estrelas no quiz (5), palavras novas (3) e minutos de cronômetro (1 a cada 5).':'Earn XP by reading pages (1 XP each), finishing books (30), quiz stars (5), new words (3) and timer minutes (1 for every 5).',
+'Nenhum livro em leitura':'No book being read','Escolha o livro e o tempo. Quando der o sinal, eu comemoro com você! ⏱️':"Choose the book and the time. When the bell rings, I'll celebrate with you! ⏱️",
+'Pausado. Respira e volta quando quiser! 😊':'Paused. Take a breath and come back whenever you want! 😊','Shhh... hora de ler! Eu fico de olho no tempo. 🤫📖':"Shhh... time to read! I'll keep an eye on the time. 🤫📖",
+'Leia um pouquinho mais antes de terminar 😉':'Read a little more before you finish 😉','⏸️ Pausar':'⏸️ Pause','▶️ Continuar':'▶️ Continue','— nenhum —':'— none —',
+'Suas palavras aparecem como bônus no Quiz Diário! Que tal treinar com os cartões? 🃏':'Your words show up as a bonus in the Daily Quiz! How about practicing with the cards? 🃏',
+'Achou uma palavra nova no livro? Anota aqui pra não esquecer! ✏️':"Found a new word in the book? Write it here so you don't forget! ✏️",'🃏 Treinar com cartões':'🃏 Practice with cards',
+'Nenhuma palavra ainda.':'No words yet.','🃏 Treino concluído!':'🃏 Practice done!','Voltar ao caderno':'Back to the notebook','Sabia todas! Que memória! 🧠✨':'You knew them all! What a memory! 🧠✨',
+'Treinar sempre ajuda a lembrar! 💜':'Practice always helps you remember! 💜','Toque para virar':'Tap to flip','😄 Sabia!':'😄 I knew it!','🤔 Ainda não':'🤔 Not yet','Parar treino':'Stop practice',
+'Escreva a palavra e o que ela significa ✏️':'Write the word and what it means ✏️','Palavra anotada! 🔤':'Word saved! 🔤',
+'Que lista linda! Qual vai ser a próxima aventura? 🌟':'What a lovely list! What will the next adventure be? 🌟','Quais livros você quer ler? Coloque aqui pra não esquecer! 🌟':"Which books do you want to read? Put them here so you don't forget! 🌟",
+'➕ Adicionar à lista':'➕ Add to the list','A lista está vazia.':'The list is empty.','Boa leitura! 📖':'Happy reading! 📖','Tirar este livro da lista?':'Remove this book from the list?',
+'📖 Comecei':'📖 Started','🎓 Ver certificado':'🎓 See certificate','🏁 Terminei o livro!':'🏁 I finished the book!',
+'PARABÉNS! Você terminou o livro inteirinho! Me conta o que achou? 🎉':'CONGRATULATIONS! You finished the whole book! Tell me what you thought? 🎉',
+'Hmm, não gostou muito? Tudo bem!':"Hmm, you didn't like it much? That's OK!",'Mais ou menos, né?':'So-so, right?','Gostou bastante! 😄':'You really liked it! 😄','AMOU! Livro nota 5! 🤩':'You LOVED it! A 5-star book! 🤩',
+'Toque nas estrelas para dar uma nota ao livro! ⭐':'Tap the stars to rate the book! ⭐','Certificado de Leitura':'Reading Certificate','Certificamos que':'This certifies that',
+'leu o livro inteirinho':'read the whole book','Lili, a Coruja Leitora 🦉':'Lili, the Reading Owl 🦉','Esta semana':'This week','Semana passada':'Last week','páginas':'pages',
+'minutos no cronômetro':'minutes on the timer','dias com leitura':'days with reading','Livros terminados:':'Books finished:','Palavras novas:':'New words:','nenhuma':'none',
+'✍️ Respostas escritas':'✍️ Written answers','Nenhuma resposta escrita nesta semana.':'No written answers this week.','📘 Perguntas por livro':'📘 Questions by book',
+'Seg':'Mon','Ter':'Tue','Qua':'Wed','Qui':'Thu','Sex':'Fri','Sáb':'Sat','Dom':'Sun','Diário do dia':"Today's journal",
+'Antes de registrar a leitura nova, conte no diário o que você leu nesse dia.':'Before logging a new reading, tell your journal what you read that day.',
+'Me conta com suas palavras. Pode escrever do jeitinho que lembrar! ✏️':'Tell me in your own words. Write it just the way you remember! ✏️',
+'Qual foi a parte mais legal, ou o que você sentiu lendo?':'What was the coolest part, or how did you feel while reading?','Livro:':'Book:','Escreva pelo menos uma frase...':'Write at least one sentence...',
+'Guardar no diário 📓':'Save to journal 📓','Escreva pelo menos 5 palavras em cada resposta ✏️':'Write at least 5 words in each answer ✏️',
+'Conta um pouquinho mais? Quem? O quê? Por quê? 🔍':'Can you tell me a bit more? Who? What? Why? 🔍','Diário guardado! 📓':'Journal saved! 📓',
+'Que diário caprichado! Agora pode registrar a leitura nova. 🎉':'What a great journal! Now you can log the new reading. 🎉',
+'Nível':'Level','XP':'XP','Criança':'Child','Conquistada!':'Earned!','nenhum':'none','Legalzinho!':'Pretty good!','Legalzinho! 🙂':'Pretty good! 🙂'
+};
+const MES_EN={Janeiro:'January',Fevereiro:'February','Março':'March',Abril:'April',Maio:'May',Junho:'June',Julho:'July',Agosto:'August',Setembro:'September',Outubro:'October',Novembro:'November',Dezembro:'December'};
+const PREMIO_EN={'gravatinha 🎀':'a bow tie 🎀','chapéu de formatura 🎓':'a graduation cap 🎓','capa de herói 🦸':'a hero cape 🦸','coroa 👑':'a crown 👑'};
+const trEN=s=>EN[s]||s;
+const premioEN=s=>PREMIO_EN[s]||s;
+const livroEN=s=>s==='seu livro'?'your book':s;
+const PADROES=[
+ [/^Meu (\S+) 📅$/,m=>`My ${MES_EN[m[1]]||m[1]} 📅`],
+ [/^Nível (\d+)$/,m=>`Level ${m[1]}`],
+ [/^(\d+) \/ (\d+) páginas \((\d+)%\)$/,m=>`${m[1]} / ${m[2]} pages (${m[3]}%)`],
+ [/^Feito hoje: (.+)$/,m=>`Done today: ${m[1]}`],
+ [/^Antes de registrar a leitura de hoje, escreva o diário de (.+)! 📓$/,m=>`Before logging today's reading, write the journal for ${m[1]}! 📓`],
+ [/^(\d+) dias seguidos lendo! Não deixa o fogo apagar! 🔥$/,m=>`${m[1]} days of reading in a row! Don't let the fire go out! 🔥`],
+ [/^(\d+) págs lidas$/,m=>`${m[1]} pages read`],
+ [/^(\d+) páginas lidas$/,m=>`${m[1]} pages read`],
+ [/^Meta nova: (\d+) páginas! 💪$/,m=>`New goal: ${m[1]} pages! 💪`],
+ [/^Incrível! (\d+) páginas lidas! 🎉$/,m=>`Amazing! ${m[1]} pages read! 🎉`],
+ [/^Muito bem! Mais (\d+) páginas de aventura! 🚀$/,m=>`Great job! ${m[1]} more pages of adventure! 🚀`],
+ [/^"(.*)" está na estante! Bora ler\? 📚$/,m=>`"${m[1]}" is on the shelf! Let's read? 📚`],
+ [/^Vamos falar sobre "(.*)"! Pense no que você leu\. 💭$/,m=>`Let's talk about "${m[1]}"! Think about what you read. 💭`],
+ [/^Pergunta (\d+) de 3$/,m=>`Question ${m[1]} of 3`],
+ [/^Quase! Significa "(.*)"\. Treine nos cartões! 🃏$/,m=>`Almost! It means "${m[1]}". Practice with the cards! 🃏`],
+ [/^Quase! A resposta é "(.*)"\. Que tal reler essa parte depois\? 📖$/,m=>`Almost! The answer is "${m[1]}". How about rereading that part later? 📖`],
+ [/^(\d+) de 3 estrelas$/,m=>`${m[1]} of 3 stars`],
+ [/^Quiz: (\d+) de 3 estrelas$/,m=>`Quiz: ${m[1]} of 3 stars`],
+ [/^Livro adicionado: (.*)$/,m=>`Book added: ${m[1]}`],
+ [/^Terminou: (.*)$/,m=>`Finished: ${m[1]}`],
+ [/^(.*) · Inglês$/,m=>`${m[1]} · English`],
+ [/^(.*) · Português$/,m=>`${m[1]} · Portuguese`],
+ [/^(Inglês 🇺🇸|Português 🇧🇷) · (\d+) min$/,m=>`${trEN(m[1])} · ${m[2]} min`],
+ [/^(\d+) páginas de (.*)$/,m=>`${m[1]} pages of ${m[2]}`],
+ [/^Palavra nova: (.*)$/,m=>`New word: ${m[1]}`],
+ [/^📜 Histórico de (.*)$/,m=>`📜 ${m[1]}'s history`],
+ [/^Último arquivo salvo: (.*)$/,m=>`Last file saved: ${m[1]}`],
+ [/^Trazer o histórico salvo em (.*)\? Ele será juntado com o que já está neste aparelho, sem apagar nada\.$/s,m=>`Bring in the history saved on ${m[1]==='arquivo'?'file':m[1]}? It will be merged with what is already on this device, without deleting anything.`],
+ [/^👨‍👩‍👦 Perguntas da história \(pais\) · (\d+)$/,m=>`👨‍👩‍👦 Story questions (parents) · ${m[1]}`],
+ [/^📘 Perguntas sobre "(.*)"$/,m=>`📘 Questions about "${m[1]}"`],
+ [/^Perguntas salvas \((\d+)\)$/,m=>`Saved questions (${m[1]})`],
+ [/^Nível (\d+) · (.*)$/,m=>`Level ${m[1]} · ${trEN(m[2])}`],
+ [/^(\d+) XP · faltam (\d+) para ganhar (.*)$/,m=>`${m[1]} XP · ${m[2]} more to win ${premioEN(m[3])}`],
+ [/^(\d+) XP · nível máximo! 👑$/,m=>`${m[1]} XP · max level! 👑`],
+ [/^Medalha nova: (.*)! 🎉$/,m=>`New medal: ${m[1].split(', ').map(x=>{const i=x.indexOf(' ');return i>0?x.slice(0,i+1)+trEN(x.slice(i+1)):trEN(x);}).join(', ')}! 🎉`],
+ [/^Você está no nível (\d+)! Com mais (\d+) XP eu ganho (.*)!$/,m=>`You're at level ${m[1]}! With ${m[2]} more XP I get ${premioEN(m[3])}!`],
+ [/^🏅 Minhas medalhas \((\d+\/\d+)\)$/,m=>`🏅 My medals (${m[1]})`],
+ [/^Tempo! Você leu (\d+) minutos sem parar! 🎉$/,m=>`Time! You read for ${m[1]} minutes straight! 🎉`],
+ [/^Muito bem! (\d+) minutos de leitura! 👏$/,m=>`Great job! ${m[1]} minutes of reading! 👏`],
+ [/^Você leu (\d+) minutos! Quantas páginas foram\? 📖$/,m=>`You read for ${m[1]} minutes! How many pages was that? 📖`],
+ [/^📒 Meu caderno \((\d+)\)$/,m=>`📒 My notebook (${m[1]})`],
+ [/^· sabia (\d+)x$/,m=>`· knew it ${m[1]}x`],
+ [/^Você sabia (\d+) de (\d+) palavras$/,m=>`You knew ${m[1]} of ${m[2]} words`],
+ [/^🃏 Cartão (\d+) de (\d+)$/,m=>`🃏 Card ${m[1]} of ${m[2]}`],
+ [/^"(.*)" agora é sua! 🎉$/,m=>`"${m[1]}" is yours now! 🎉`],
+ [/^Palavra bônus! O que significa "(.*)"\?$/,m=>`Bonus word! What does "${m[1]}" mean?`],
+ [/^🌟 Quero ler \((\d+)\)$/,m=>`🌟 Want to read (${m[1]})`],
+ [/^🏁 Terminado em (.*)$/,m=>`🏁 Finished on ${m[1]}`],
+ [/^de (.*)$/,m=>`by ${m[1]}`],
+ [/^📊 Resumo de (.*)$/,m=>`📊 ${m[1]}'s summary`],
+ [/^(\d\d\/\d\d\/\d{4}) a (\d\d\/\d\d\/\d{4})$/,m=>`${m[1]} to ${m[2]}`],
+ [/^✍️ Falta o diário de (.*)$/,m=>`✍️ The journal for ${m[1]} is missing`],
+ [/^✍️ Escrever o diário de (.*)$/,m=>`✍️ Write the journal for ${m[1]}`],
+ [/^Opa! Primeiro me conta como foi a leitura de (.*) no diário\. 📓$/,m=>`Oops! First tell me in the journal how the reading on ${m[1]} went. 📓`],
+ [/^O que aconteceu na parte de (.*) que você leu\?$/,m=>`What happened in the part of ${livroEN(m[1])} that you read?`],
+ [/^(\d+) XP · prêmio: (.*)$/,m=>`${m[1]} XP · prize: ${premioEN(m[2])}`],
+ [/^📓 Diário de (.*)$/,m=>`📓 Journal for ${m[1]}`]
+];
+function traduzir(txt){
+  if(idiomaUI!=='en' || !txt) return txt;
+  const ini=txt.match(/^\s*/)[0], fim=txt.match(/\s*$/)[0];
+  const k=txt.trim().replace(/\s+/g,' ');
+  if(!k || !/[A-Za-zÀ-ú]/.test(k)) return txt;
+  if(EN[k]) return ini+EN[k]+fim;
+  for(const [re,f] of PADROES){ const m=k.match(re); if(m) return ini+f(m)+fim; }
+  return txt;
+}
+const origTexto=new WeakMap(), origAttr=new WeakMap();
+const ATTRS=['placeholder','title','aria-label'];
+function ignorar(n){ const p=n.parentNode; return !p || /^(SCRIPT|STYLE|TEXTAREA)$/.test(p.nodeName) || (p.closest && p.closest('svg')); }
+function trTexto(n){
+  if(ignorar(n)) return;
+  const reg=origTexto.get(n), cur=n.nodeValue;
+  if(reg && reg.en===cur) return;
+  const en=traduzir(cur);
+  if(en!==cur){ origTexto.set(n,{pt:cur,en}); n.nodeValue=en; } else origTexto.delete(n);
+}
+function trAttr(el){
+  ATTRS.forEach(a=>{
+    if(!el.hasAttribute || !el.hasAttribute(a)) return;
+    let reg=origAttr.get(el); if(!reg){ reg={}; origAttr.set(el,reg); }
+    const cur=el.getAttribute(a);
+    if(reg[a] && reg[a].en===cur) return;
+    const en=traduzir(cur);
+    if(en!==cur){ reg[a]={pt:cur,en}; el.setAttribute(a,en); } else delete reg[a];
+  });
+}
+function trArvore(raiz){
+  if(raiz.nodeType===3){ trTexto(raiz); return; }
+  if(raiz.nodeType!==1) return;
+  trAttr(raiz);
+  const w=document.createTreeWalker(raiz,NodeFilter.SHOW_TEXT|NodeFilter.SHOW_ELEMENT);
+  let n; while((n=w.nextNode())){ if(n.nodeType===3) trTexto(n); else trAttr(n); }
+}
+function voltarPT(){
+  const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT|NodeFilter.SHOW_ELEMENT);
+  let n; while((n=w.nextNode())){
+    if(n.nodeType===3){ const r=origTexto.get(n); if(r && n.nodeValue===r.en) n.nodeValue=r.pt; origTexto.delete(n); }
+    else { const r=origAttr.get(n); if(r){ ATTRS.forEach(a=>{ if(r[a] && n.getAttribute(a)===r[a].en) n.setAttribute(a,r[a].pt); }); origAttr.delete(n); } }
+  }
+}
+const obsIdioma=new MutationObserver(ms=>{
+  if(idiomaUI!=='en') return;
+  ms.forEach(m=>{
+    if(m.type==='characterData') trTexto(m.target);
+    else if(m.type==='attributes') trAttr(m.target);
+    else m.addedNodes.forEach(trArvore);
+  });
+});
+obsIdioma.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:ATTRS});
+// Caixas de aviso do navegador
+const _alert=window.alert.bind(window), _confirm=window.confirm.bind(window), _prompt=window.prompt.bind(window);
+window.alert=m=>_alert(traduzir(String(m)));
+window.confirm=m=>_confirm(traduzir(String(m)));
+window.prompt=(m,v)=>_prompt(traduzir(String(m)),v);
+function aplicarIdioma(){
+  document.documentElement.lang=idiomaUI==='en'?'en':'pt-BR';
+  document.documentElement.classList.toggle('ui-en',idiomaUI==='en');
+  document.title=idiomaUI==='en'?'Fun Reading with Lili':'Leitura Divertida com a Lili';
+  if(idiomaUI==='en') trArvore(document.body); else voltarPT();
+  const b=document.getElementById('btn-idioma');
+  if(b){ b.innerHTML=idiomaUI==='en'?'🇺🇸<small>EN</small>':'🇧🇷<small>PT</small>'; }
+}
+function alternarIdioma(){
+  idiomaUI=idiomaUI==='en'?'pt':'en';
+  try{ localStorage.setItem(IDIOMA_KEY,idiomaUI); }catch(e){}
+  aplicarIdioma();
+  if(atual && document.getElementById('tela-painel').classList.contains('ativa')) try{ desenharGrafico(leiturasDoMes()); }catch(e){}
+}
+aplicarIdioma();
 </script>
 </body>
 </html>
