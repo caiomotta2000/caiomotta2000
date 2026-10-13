@@ -6,6 +6,11 @@
 <title>Leitura Divertida com a Lili</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Lili Leitura">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#7b5cff">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -492,6 +497,7 @@
   <section id="tela-resumo" class="tela">
     <button class="voltar" data-ir="painel">⬅ Voltar</button>
     <div class="cartao" id="resumo-caixa"></div>
+    <div class="cartao" id="pais-config" style="display:none"></div>
   </section>
 
   <!-- DIÁRIO DO DIA -->
@@ -1651,6 +1657,122 @@ document.getElementById('fb-enviar').onclick=async()=>{
   }finally{ bt.disabled=false; }
 };
 
+/* ============ APP NO IPAD (TELA DE INÍCIO, OFFLINE) ============ */
+const ehAppInstalado=()=>window.navigator.standalone===true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); });
+}
+try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+
+/* ============ LEMBRETE DA LILI ============ */
+function lembreteAtivo(){
+  if(!atual || !u() || !u().lembrete) return false;
+  const [h,m]=u().lembrete.split(':').map(Number), agora=new Date();
+  if(agora.getHours()*60+agora.getMinutes() < h*60+m) return false;
+  return !u().leituras.some(l=>l.data===hojeISO());
+}
+function aplicarLembrete(){
+  if(!document.getElementById('tela-painel').classList.contains('ativa') || !lembreteAtivo()) return;
+  const b=document.getElementById('balao-painel'), txt=`Já são ${u().lembrete.replace(':','h')} e a gente ainda não leu hoje! Bora ler 10 minutinhos? ⏰📖`;
+  if(b.textContent===txt || b.textContent===traduzir(txt)) return;
+  b.textContent=txt; mascote('m-painel','uau',true);
+}
+const _montarPainel=montarPainel;
+montarPainel=function(){ _montarPainel.apply(this,arguments); aplicarLembrete(); };
+setInterval(aplicarLembrete,60000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) aplicarLembrete(); });
+
+/* ============ RESUMO SEMANAL POR E-MAIL (com cópia do histórico) ============ */
+const RESUMO_EMAIL=FEEDBACK_EMAIL;
+function semanaAlvo(){
+  // Depois de domingo 18h manda a semana que está acabando; antes disso, a semana passada.
+  const agora=new Date(), ini=inicioSemana(agora);
+  if(!(agora.getDay()===0 && agora.getHours()>=18)) ini.setDate(ini.getDate()-7);
+  return ini;
+}
+function textoResumo(ini){
+  const dias=diasDaSemana(ini), set=new Set(dias);
+  const partes=[`Semana de ${fmtData(dias[0])} a ${fmtData(dias[6])}`];
+  Object.entries(banco.usuarios).forEach(([nome,us])=>{
+    const leit=us.leituras.filter(l=>set.has(l.data));
+    const pt=leit.filter(l=>l.idioma!=='en').reduce((s,l)=>s+l.paginas,0), en=leit.filter(l=>l.idioma==='en').reduce((s,l)=>s+l.paginas,0);
+    const min=leit.reduce((s,l)=>s+(l.minutos||0),0), diasLidos=new Set(leit.map(l=>l.data)).size;
+    const tit=idl=>(us.livros.find(l=>l.id===idl)||{}).titulo||'';
+    const term=us.livros.filter(l=>l.terminadoEm && set.has(l.terminadoEm)).map(l=>`${l.titulo} (${'⭐'.repeat(l.estrelas||0)})`);
+    const qz=Object.entries(us.quiz||{}).filter(([d])=>set.has(d)).map(([,q])=>q.acertos);
+    const pal=(us.palavras||[]).filter(p=>set.has(p.criado)).map(p=>`${p.palavra} = ${p.significado}`);
+    const resp=(us.respostas||[]).filter(r=>set.has(r.data)).map(r=>`• ${fmtData(r.data)} ${tit(r.livro)}\n  ${r.p}\n  “${r.r}”`);
+    partes.push(`\n===== ${us.avatar||''} ${nome} =====
+Páginas: ${pt+en} (português ${pt}, inglês ${en})
+Dias com leitura: ${diasLidos}/7
+Minutos no cronômetro: ${min}
+Quizzes: ${qz.length}${qz.length?` (estrelas: ${qz.join(', ')})`:''}
+Livros terminados: ${term.length?term.join(', '):'nenhum'}
+Palavras novas: ${pal.length?pal.join('; '):'nenhuma'}
+Diário e respostas escritas:
+${resp.length?resp.join('\n'):'  nenhuma nesta semana'}`);
+  });
+  return partes.join('\n');
+}
+async function enviarResumoSemanal(manual){
+  const ini=manual?inicioSemana():semanaAlvo(), chave=hojeISO(ini);
+  if(!manual && banco.resumoEmailSemana===chave) return 'ja';
+  if(!Object.values(banco.usuarios).some(us=>us.leituras.length)) return 'vazio';
+  const dias=diasDaSemana(ini);
+  const fd=new FormData();
+  fd.append('_subject',`📚 Lili: resumo da semana ${fmtData(dias[0])} a ${fmtData(dias[6])}`);
+  fd.append('_template','box'); fd.append('_captcha','false');
+  fd.append('Resumo',textoResumo(ini));
+  fd.append('Backup','O arquivo anexo é uma cópia do histórico. Para restaurar: no app, “📂 Trazer histórico de um arquivo”.');
+  const json=JSON.stringify({app:'leituraDivertida', versao:1, salvoEm:new Date().toISOString(), dados:banco});
+  fd.append('attachment', new Blob([json],{type:'application/json'}), `historico-leitura-${hojeISO()}.json`);
+  try{
+    const r=await fetch('https://formsubmit.co/ajax/'+RESUMO_EMAIL,{method:'POST',headers:{'Accept':'application/json'},body:fd});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok || j.success===false || j.success==='false') return 'falhou';
+    if(!manual){ banco.resumoEmailSemana=chave; }
+    banco.resumoEmailUltimo=hojeISO(); salvar();
+    return 'ok';
+  }catch(e){ return 'falhou'; }
+}
+setTimeout(()=>{ if(navigator.onLine!==false) enviarResumoSemanal(false); },4000);
+window.addEventListener('online',()=>enviarResumoSemanal(false));
+
+/* ============ CONFIGURAÇÕES NA ÁREA DOS PAIS ============ */
+function montarConfigPais(){
+  const cx=document.getElementById('pais-config'), us=u(); if(!cx||!us) return;
+  const inst=ehAppInstalado();
+  cx.style.display='block';
+  cx.innerHTML=`<h2>⏰ Lembrete da Lili</h2>
+    <p>Se ${esc(atual)} ainda não tiver lido no dia, depois deste horário a Lili chama para ler quando o app estiver aberto.</p>
+    <label for="cfg-hora">Horário</label><input type="time" id="cfg-hora" value="${us.lembrete||''}">
+    <div class="grid2"><button class="btn verde" id="cfg-hora-ok">Salvar lembrete ⏰</button><button class="btn branco" id="cfg-hora-off">Sem lembrete</button></div>
+    <h2 style="margin-top:18px">📧 Resumo semanal por e-mail</h2>
+    <p>Toda semana vai um resumo de todas as crianças para <b>${RESUMO_EMAIL}</b>, com uma cópia do histórico anexada. Ele sai quando o app é aberto com internet a partir de domingo às 18h.</p>
+    <p style="font-weight:700;color:var(--roxo)">${banco.resumoEmailUltimo?'Último envio: '+fmtData(banco.resumoEmailUltimo):'Nenhum resumo enviado ainda.'}</p>
+    <button class="btn azul" id="cfg-enviar">📨 Enviar resumo desta semana agora</button>
+    <h2 style="margin-top:18px">📲 App no iPad</h2>
+    ${inst?'<p>✅ O app está instalado na Tela de Início e funciona sem internet.</p>'
+      :`<p>Instale o app para ele ganhar ícone, funcionar sem internet e proteger o histórico:</p>
+    <p><b>1.</b> Primeiro salve o histórico: 📜 → <b>💾 Salvar histórico em arquivo</b>.<br><b>2.</b> No Safari, toque em <b>Compartilhar ⬆️</b> → <b>Adicionar à Tela de Início</b>.<br><b>3.</b> Abra pelo ícone da Lili e toque em <b>📂 Trazer histórico de um arquivo</b>.</p>`}`;
+  document.getElementById('cfg-hora-ok').onclick=()=>{
+    const v=document.getElementById('cfg-hora').value;
+    if(!/^\d\d:\d\d$/.test(v)){ toast('Escolha um horário ⏰'); return; }
+    us.lembrete=v; salvar(); toast('Lembrete salvo! ⏰');
+  };
+  document.getElementById('cfg-hora-off').onclick=()=>{ delete us.lembrete; salvar(); document.getElementById('cfg-hora').value=''; toast('Lembrete desligado'); };
+  document.getElementById('cfg-enviar').onclick=async()=>{
+    const b=document.getElementById('cfg-enviar'); b.disabled=true; toast('Enviando... ✈️');
+    const r=await enviarResumoSemanal(true); b.disabled=false;
+    toast(r==='ok'?'Resumo enviado! 📧':r==='vazio'?'Ainda não há leituras para resumir.':'Não consegui enviar. Confira a internet.');
+    if(r==='ok') montarConfigPais();
+  };
+}
+const _gatePin=gatePin;
+gatePin=function(cx,onOk){ _gatePin(cx,()=>{ onOk(); if(cx.id==='resumo-caixa') montarConfigPais(); }); };
+const _montarResumo=montarResumo;
+montarResumo=function(){ const c=document.getElementById('pais-config'); if(c) c.style.display='none'; _montarResumo.apply(this,arguments); };
+
 /* ============ MÚSICA DE FUNDO (composta no app, sem arquivo) ============ */
 const MUSICA_KEY='leituraDivertida_musica';
 const musica={ac:null,mestre:null,ligada:false,timer:null,prox:0,passo:0,frase:0};
@@ -1846,6 +1968,15 @@ const EN={
 'Sua mensagem':'Your message','Escreva aqui...':'Write here...','Enviar 📨':'Send 📨','✉️ Enviar pelo app Mail':'✉️ Send with the Mail app','Escreva sua mensagem primeiro ✏️':'Write your message first ✏️',
 'Enviando... ✈️':'Sending... ✈️','Mensagem enviada! Obrigada por ajudar a melhorar o app! 💜':'Message sent! Thanks for helping make the app better! 💜','Feedback enviado! 📨':'Feedback sent! 📨',
 'Ops, não consegui enviar agora. Você pode mandar pelo app Mail! 📧':"Oops, I couldn't send it right now. You can send it with the Mail app! 📧",'Sem conexão ou o envio falhou.':'No connection, or sending failed.',
+'⏰ Lembrete da Lili':"⏰ Lili's reminder",'Horário':'Time','Salvar lembrete ⏰':'Save reminder ⏰','Sem lembrete':'No reminder',
+'📧 Resumo semanal por e-mail':'📧 Weekly email summary','Nenhum resumo enviado ainda.':'No summary sent yet.','📨 Enviar resumo desta semana agora':"📨 Send this week's summary now",
+'📲 App no iPad':'📲 App on the iPad','✅ O app está instalado na Tela de Início e funciona sem internet.':'✅ The app is installed on the Home Screen and works offline.',
+'Instale o app para ele ganhar ícone, funcionar sem internet e proteger o histórico:':'Install the app to get an icon, work offline and protect the history:',
+'Primeiro salve o histórico: 📜 →':'First save the history: 📜 →','No Safari, toque em':'In Safari, tap','Compartilhar ⬆️':'Share ⬆️','Adicionar à Tela de Início':'Add to Home Screen',
+'Abra pelo ícone da Lili e toque em':"Open it from Lili's icon and tap",'Escolha um horário ⏰':'Pick a time ⏰','Lembrete salvo! ⏰':'Reminder saved! ⏰','Lembrete desligado':'Reminder off',
+'Resumo enviado! 📧':'Summary sent! 📧','Ainda não há leituras para resumir.':'There are no readings to summarize yet.','Não consegui enviar. Confira a internet.':"I couldn't send it. Check the internet.",
+'Toda semana vai um resumo de todas as crianças para':'Every week a summary of all the kids goes to',
+', com uma cópia do histórico anexada. Ele sai quando o app é aberto com internet a partir de domingo às 18h.':', with a copy of the history attached. It goes out when the app is opened online from Sunday at 6 pm.',
 'Nível':'Level','XP':'XP','Criança':'Child','Conquistada!':'Earned!','nenhum':'none','Legalzinho!':'Pretty good!','Legalzinho! 🙂':'Pretty good! 🙂'
 };
 const MES_EN={Janeiro:'January',Fevereiro:'February','Março':'March',Abril:'April',Maio:'May',Junho:'June',Julho:'July',Agosto:'August',Setembro:'September',Outubro:'October',Novembro:'November',Dezembro:'December'};
@@ -1910,6 +2041,9 @@ const PADROES=[
  [/^Opa! Primeiro me conta como foi a leitura de (.*) no diário\. 📓$/,m=>`Oops! First tell me in the journal how the reading on ${m[1]} went. 📓`],
  [/^O que aconteceu na parte de (.*) que você leu\?$/,m=>`What happened in the part of ${livroEN(m[1])} that you read?`],
  [/^(\d+) XP · prêmio: (.*)$/,m=>`${m[1]} XP · prize: ${premioEN(m[2])}`],
+ [/^Já são (\d+)h(\d+) e a gente ainda não leu hoje! Bora ler 10 minutinhos\? ⏰📖$/,m=>`It's already ${m[1]}:${m[2]} and we haven't read today! Let's read for 10 minutes? ⏰📖`],
+ [/^Se (.+) ainda não tiver lido no dia, depois deste horário a Lili chama para ler quando o app estiver aberto\.$/,m=>`If ${m[1]} hasn't read yet that day, after this time Lili will call for reading when the app is open.`],
+ [/^Último envio: (.*)$/,m=>`Last sent: ${m[1]}`],
  [/^📓 Diário de (.*)$/,m=>`📓 Journal for ${m[1]}`]
 ];
 function traduzir(txt){
