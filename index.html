@@ -343,6 +343,10 @@
         <input type="number" id="r-paginas" value="5" min="1" max="999">
         <button type="button" id="r-mais">+</button>
       </div>
+      <label for="r-capitulo">Qual capítulo você leu?</label>
+      <input type="text" id="r-capitulo" maxlength="60" placeholder="Ex.: Capítulo 3" autocomplete="off">
+      <label for="r-resumo">Resumo: conte com suas palavras o que aconteceu</label>
+      <textarea id="r-resumo" rows="4" maxlength="1200" placeholder="Escreva pelo menos 10 palavras..."></textarea>
       <label for="r-minutos">Minutos lendo (opcional)</label>
       <input type="number" id="r-minutos" min="0" max="600" placeholder="Ex.: 15">
       <label>Em que idioma?</label>
@@ -356,6 +360,7 @@
       <div class="erro" id="r-erro"></div>
       <button class="btn verde" id="btn-registrar">Salvar leitura ⭐</button>
     </div>
+    <div class="cartao" id="r-quiz" style="display:none"></div>
   </section>
 
   <!-- ADICIONAR -->
@@ -831,10 +836,14 @@ document.getElementById('btn-registrar').onclick=()=>{
   if(!livro){ ir('adicionar'); return; }
   if(diarioPendente(data)){ atualizarAvisoDiario(); erro.textContent='Primeiro escreva o diário do dia anterior ✍️'; mascote('m-registrar','pensa',true); return; }
   if(!(pag>0 && pag<1000)){ erro.textContent='Coloque um número de páginas entre 1 e 999 🔢'; mascote('m-registrar','ops',true); return; }
+  const capitulo=document.getElementById('r-capitulo').value.trim(), resumo=document.getElementById('r-resumo').value.trim();
+  if(!capitulo){ erro.textContent='Escreva qual capítulo você leu 📑'; mascote('m-registrar','ops',true); return; }
+  if(resumo.split(/\s+/).filter(Boolean).length<10){ erro.textContent='O resumo precisa ter pelo menos 10 palavras ✍️'; mascote('m-registrar','ops',true); return; }
   const minutos=parseInt(document.getElementById('r-minutos').value,10);
-  const reg={id:id(), livro, paginas:pag, idioma:langRegistro, data}; if(minutos>0 && minutos<=600) reg.minutos=minutos;
+  const reg={id:id(), livro, paginas:pag, idioma:langRegistro, data, capitulo, resumo, xpQuiz:0}; if(minutos>0 && minutos<=600) reg.minutos=minutos;
   u().leituras.push(reg); salvar(); registroPendente=null;
-  erro.textContent='';
+  erro.textContent=''; document.getElementById('r-capitulo').value=''; document.getElementById('r-resumo').value='';
+  quizIA(reg); return;
   const frases = langRegistro==='en'
     ? [`Awesome! ${pag} pages in English! 🇺🇸`, `Great job! You read ${pag} pages! 🌟`]
     : [`Incrível! ${pag} páginas lidas! 🎉`, `Muito bem! Mais ${pag} páginas de aventura! 🚀`];
@@ -1268,7 +1277,7 @@ function estatisticas(us){
 }
 function nivelInfo(us){
   const e=estatisticas(us);
-  const xp=e.pag + e.term*30 + e.estrelas*5 + e.palavras*3 + Math.floor(e.min/5);
+  const xp=xpLeituras((us||u()).leituras) + e.term*30 + e.estrelas*5 + e.palavras*3 + Math.floor(e.min/5);
   let n=0; NIVEIS.forEach((v,i)=>{ if(xp>=v.xp) n=i; });
   const prox=NIVEIS[n+1];
   return {xp, nivel:n+1, nome:NIVEIS[n].nome, prox, pct: prox ? Math.round((xp-NIVEIS[n].xp)/(prox.xp-NIVEIS[n].xp)*100) : 100};
@@ -1581,7 +1590,7 @@ function montarResumo(){
 /* ============ DIÁRIO DO DIA (trava do registro) ============ */
 // Para registrar a leitura de um dia, o último dia com leitura antes dele precisa ter diário escrito
 // (uma resposta escrita no Quiz Diário daquele dia ou o "Diário do dia").
-function temDiario(dia){ return (u().respostas||[]).some(r=>r.data===dia && r.r && r.r.trim()); }
+function temDiario(dia){ return u().leituras.some(l=>l.data===dia && l.resumo) || (u().respostas||[]).some(r=>r.data===dia && r.r && r.r.trim()); }
 function diarioPendente(dataAlvo){
   const dias=[...new Set(u().leituras.map(l=>l.data))].filter(d=>d<dataAlvo).sort();
   const ult=dias.pop();
@@ -1791,6 +1800,73 @@ gatePin=function(cx,onOk){ _gatePin(cx,()=>{ onOk(); if(cx.id==='resumo-caixa') 
 const _montarResumo=montarResumo;
 montarResumo=function(){ const c=document.getElementById('pais-config'); if(c) c.style.display='none'; _montarResumo.apply(this,arguments); };
 
+/* ============ QUIZ DA IA POR CAPÍTULO ============ */
+// Leituras novas (com xpQuiz) valem 10 XP por acerto; as antigas continuam valendo 1 XP por página.
+function xpLeituras(ls){ return (ls||[]).reduce((s,l)=>s+(typeof l.xpQuiz==='number'?l.xpQuiz:(l.paginas||0)),0); }
+async function gerarPerguntasIA(livro, reg){
+  const en=reg.idioma==='en';
+  const prompt=`Você é professora de leitura para uma criança de 9 anos. Livro: "${livro.titulo}"${livro.autor?` de ${livro.autor}`:''}. Trecho lido: ${reg.capitulo}. Resumo escrito pela criança: "${reg.resumo}".
+Se você CONHECE bem esse livro e esse capítulo, crie 3 perguntas de múltipla escolha sobre a história desse trecho (personagens, acontecimentos, por quê), cada uma com 4 opções curtas e só uma certa.
+Se NÃO conhece o livro com segurança, não invente: crie 3 perguntas abertas e descritivas, baseadas no resumo, para a criança responder com as próprias palavras (ex.: o que o personagem sentiu, por que algo aconteceu, o que ela acha que vem depois).
+Escreva em ${en?'inglês simples':'português'}. Responda SOMENTE com JSON, um destes formatos:
+{"tipo":"multipla","perguntas":[{"p":"pergunta","opcoes":["a","b","c","d"],"certa":0}]}
+{"tipo":"aberta","perguntas":[{"p":"pergunta"}]}`;
+  const r=await fetch('https://text.pollinations.ai/openai',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'openai',messages:[{role:'user',content:prompt}]})});
+  if(!r.ok) throw new Error('ia '+r.status);
+  const txt=(await r.json()).choices[0].message.content, j=JSON.parse(txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1));
+  if(j.tipo==='aberta'){ const ab=(j.perguntas||[]).filter(q=>q.p).slice(0,3); if(ab.length<3) throw new Error('ia formato'); ab.aberta=true; return ab; }
+  const qs=(j.perguntas||[]).filter(q=>q.p && Array.isArray(q.opcoes) && q.opcoes.length>=2 && q.opcoes[q.certa]!=null).slice(0,3);
+  if(qs.length<3) throw new Error('ia formato'); return qs;
+}
+async function quizIA(reg){
+  const cx=document.getElementById('r-quiz'), livro=u().livros.find(l=>l.id===reg.livro)||{titulo:''}, balao=document.getElementById('balao-registrar');
+  cx.style.display='block'; cx.innerHTML='<h2>🧠 Quiz do capítulo</h2><p>A Lili está preparando 3 perguntas sobre o que você leu... ⏳</p>';
+  balao.textContent='Leitura salva! Agora vamos ver o que você entendeu! 🧠'; mascote('m-registrar','pensa'); cx.scrollIntoView({behavior:'smooth'});
+  let qs; try{ qs=await gerarPerguntasIA(livro, reg); }catch(e){
+    cx.innerHTML='<h2>🧠 Quiz do capítulo</h2><p>A Lili não conseguiu criar o quiz agora (precisa de internet). Sua leitura ficou salva, mas sem XP do quiz.</p><button class="btn azul" id="rq-tentar">🔄 Tentar de novo</button><button class="btn branco" id="rq-sair">⬅ Voltar ao painel</button>';
+    document.getElementById('rq-tentar').onclick=()=>quizIA(reg); document.getElementById('rq-sair').onclick=()=>{ cx.style.display='none'; ir('painel'); }; return; }
+  if(qs.aberta) return quizAberto(reg, qs, livro);
+  const resp=[];
+  cx.innerHTML='<h2>🧠 Quiz do capítulo</h2><p>Cada acerto vale 10 XP!</p>'+qs.map((q,i)=>`<div class="q-bloco" style="margin-top:12px"><b>${i+1}. ${esc(q.p)}</b>${q.opcoes.map((o,k)=>`<button class="btn branco rq-op" data-q="${i}" data-k="${k}" style="margin-top:6px;text-align:left">${esc(o)}</button>`).join('')}</div>`).join('')+'<div id="rq-fim"></div>';
+  cx.querySelectorAll('.rq-op').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.q, k=+b.dataset.k; if(resp[i]!=null) return; resp[i]=k;
+    cx.querySelectorAll(`.rq-op[data-q="${i}"]`).forEach(x=>{ const kk=+x.dataset.k; x.disabled=true;
+      if(kk===qs[i].certa){ x.style.background='#b8f2c2'; x.textContent='✅ '+x.textContent; } else if(kk===k){ x.style.background='#ffc2c2'; x.textContent='❌ '+x.textContent; } });
+    if(resp.filter(v=>v!=null).length===3){
+      const ac=qs.filter((q,j)=>resp[j]===q.certa).length; reg.xpQuiz=ac*10; reg.quiz=qs.map((q,j)=>({p:q.p,certa:q.opcoes[q.certa],resp:q.opcoes[resp[j]]})); salvar();
+      document.getElementById('rq-fim').innerHTML=`<div class="resp" style="margin-top:14px;background:#fff3c4"><b>Você acertou ${ac} de 3! +${ac*10} XP ⭐</b></div><button class="btn verde" id="rq-ok">Voltar ao painel 🏠</button>`;
+      document.getElementById('rq-ok').onclick=()=>{ cx.style.display='none'; ir('painel'); };
+      balao.textContent= ac===3?'Uau! Acertou tudo! Você entendeu muito bem! 🏆': ac?'Muito bem! Continue lendo com atenção! 🌟':'Tudo bem! Na próxima, leia com calma e tente de novo! 💪';
+      mascote('m-registrar',ac?'uau':'pensa',true); if(ac) confete(); rkSync=0; rkSincronizar&&rkSincronizar();
+    }
+  });
+}
+
+async function avaliarIA(livro, reg, qs, rs){
+  const prompt=`Você é uma professora gentil avaliando uma criança de 9 anos. Livro: "${livro.titulo}", ${reg.capitulo}. Resumo dela: "${reg.resumo}".
+${qs.map((q,i)=>`Pergunta ${i+1}: ${q.p}\nResposta: ${rs[i]}`).join('\n')}
+Dê uma nota de 0 a 10 para cada resposta, valorizando esforço, coerência com a história e frases completas (resposta vazia ou sem sentido = 0). Responda SOMENTE JSON: {"notas":[n,n,n],"comentario":"uma frase curta e carinhosa em ${reg.idioma==='en'?'inglês':'português'}"}`;
+  const r=await fetch('https://text.pollinations.ai/openai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'openai',messages:[{role:'user',content:prompt}]})});
+  const txt=(await r.json()).choices[0].message.content, j=JSON.parse(txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1));
+  return {notas:(j.notas||[]).slice(0,3).map(n=>Math.max(0,Math.min(10,Math.round(+n||0)))), comentario:j.comentario||''};
+}
+function quizAberto(reg, qs, livro){
+  const cx=document.getElementById('r-quiz'), balao=document.getElementById('balao-registrar');
+  cx.innerHTML='<h2>🧠 Quiz do capítulo</h2><p>Responda com suas palavras. Cada resposta vale até 10 XP!</p>'+qs.map((q,i)=>`<label for="rq-a${i}">${i+1}. ${esc(q.p)}</label><textarea id="rq-a${i}" rows="3" maxlength="600"></textarea>`).join('')+'<div class="erro" id="rq-erro"></div><button class="btn verde" id="rq-enviar">Enviar respostas ✅</button><div id="rq-fim"></div>';
+  document.getElementById('rq-enviar').onclick=async()=>{
+    const rs=qs.map((q,i)=>document.getElementById('rq-a'+i).value.trim());
+    if(rs.some(r=>r.split(/\s+/).filter(Boolean).length<3)){ document.getElementById('rq-erro').textContent='Responda cada pergunta com pelo menos 3 palavras ✍️'; return; }
+    const bt=document.getElementById('rq-enviar'); bt.disabled=true; bt.textContent='A Lili está lendo suas respostas... ⏳';
+    let av; try{ av=await avaliarIA(livro, reg, qs, rs); if(av.notas.length<3) throw 0; }catch(e){ av={notas:rs.map(r=>r.split(/\s+/).length>=8?7:5), comentario:''}; }
+    const xp=av.notas.reduce((a,b)=>a+b,0); reg.xpQuiz=xp; reg.quiz=qs.map((q,i)=>({p:q.p,resp:rs[i],nota:av.notas[i]})); salvar();
+    bt.style.display='none';
+    document.getElementById('rq-fim').innerHTML=`<div class="resp" style="margin-top:14px;background:#fff3c4"><b>Você ganhou +${xp} XP ⭐</b>${esc(av.comentario)}</div><button class="btn verde" id="rq-ok">Voltar ao painel 🏠</button>`;
+    document.getElementById('rq-ok').onclick=()=>{ cx.style.display='none'; ir('painel'); };
+    balao.textContent= xp>=24?'Que respostas incríveis! 🏆':'Muito bem! Continue lendo com atenção! 🌟'; mascote('m-registrar','uau',true); confete(); rkSync=0; rkSincronizar();
+  };
+}
+
 /* ============ RANKING DA SEMANA ENTRE IPADS (Firebase Realtime Database) ============ */
 const RANKING_DB='https://lili-leitura-default-rtdb.firebaseio.com';
 const semanaISO=(d)=>hojeISO(inicioSemana(d||new Date()));
@@ -1803,7 +1879,7 @@ function xpSemana(us, iniISO){
   const term=us.livros.filter(l=>l.status==='terminado' && l.terminadoEm && set.has(l.terminadoEm)).length;
   const estrelas=Object.entries(us.quiz||{}).filter(([d])=>set.has(d)).reduce((s,[,q])=>s+(q.acertos||0),0);
   const pal=(us.palavras||[]).filter(p=>set.has(p.criado)).length;
-  return pag + term*30 + estrelas*5 + pal*3 + Math.floor(min/5);
+  return xpLeituras(leit) + term*30 + estrelas*5 + pal*3 + Math.floor(min/5);
 }
 const normTurma=t=>(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,'-').replace(/[^A-Z0-9-]/g,'').slice(0,24);
 const novoId=()=>'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
@@ -2126,6 +2202,15 @@ const EN={
 'Preciso de internet para ver os seus amigos! 📶':'I need internet to see your friends! 📶','Ninguém leu ainda nesta semana. Seja o primeiro! 🚀':'Nobody has read yet this week. Be the first! 🚀',
 '(você)':'(you)','Sair da turma? Seus troféus continuam guardados.':'Leave the group? Your trophies stay saved.',
 'Você está em 1º lugar! Continue lendo para ganhar o troféu! 🏆':"You're in 1st place! Keep reading to win the trophy! 🏆",'Leia hoje para aparecer no ranking! 📖':'Read today to show up in the ranking! 📖',
+'Qual capítulo você leu?':'Which chapter did you read?','Ex.: Capítulo 3':'E.g.: Chapter 3','Resumo: conte com suas palavras o que aconteceu':'Summary: tell in your own words what happened',
+'Escreva pelo menos 10 palavras...':'Write at least 10 words...','Escreva qual capítulo você leu 📑':'Write which chapter you read 📑','O resumo precisa ter pelo menos 10 palavras ✍️':'The summary needs at least 10 words ✍️',
+'🧠 Quiz do capítulo':'🧠 Chapter quiz','A Lili está preparando 3 perguntas sobre o que você leu... ⏳':'Lili is preparing 3 questions about what you read... ⏳',
+'Leitura salva! Agora vamos ver o que você entendeu! 🧠':"Reading saved! Now let's see what you understood! 🧠",
+'A Lili não conseguiu criar o quiz agora (precisa de internet). Sua leitura ficou salva, mas sem XP do quiz.':"Lili couldn't create the quiz now (it needs internet). Your reading was saved, but without quiz XP.",
+'Responda com suas palavras. Cada resposta vale até 10 XP!':'Answer in your own words. Each answer is worth up to 10 XP!','Enviar respostas ✅':'Send answers ✅','Responda cada pergunta com pelo menos 3 palavras ✍️':'Answer each question with at least 3 words ✍️','A Lili está lendo suas respostas... ⏳':'Lili is reading your answers... ⏳','Que respostas incríveis! 🏆':'What amazing answers! 🏆',
+'🔄 Tentar de novo':'🔄 Try again','⬅ Voltar ao painel':'⬅ Back to dashboard','Cada acerto vale 10 XP!':'Each right answer is worth 10 XP!','Voltar ao painel 🏠':'Back to dashboard 🏠',
+'Uau! Acertou tudo! Você entendeu muito bem! 🏆':'Wow! All correct! You understood it really well! 🏆','Muito bem! Continue lendo com atenção! 🌟':'Well done! Keep reading carefully! 🌟',
+'Tudo bem! Na próxima, leia com calma e tente de novo! 💪':"That's OK! Next time, read calmly and try again! 💪",
 'Nível':'Level','XP':'XP','Criança':'Child','Conquistada!':'Earned!','nenhum':'none','Legalzinho!':'Pretty good!','Legalzinho! 🙂':'Pretty good! 🙂'
 };
 const MES_EN={Janeiro:'January',Fevereiro:'February','Março':'March',Abril:'April',Maio:'May',Junho:'June',Julho:'July',Agosto:'August',Setembro:'September',Outubro:'October',Novembro:'November',Dezembro:'December'};
@@ -2146,6 +2231,8 @@ const PADROES=[
  [/^Você está em (\d+)º lugar! Faltam (\d+) XP para passar (.+)! 💪$/,m=>`You're in place #${m[1]}! ${m[2]} XP to pass ${m[3]}! 💪`],
  [/^🏆 Você ganhou a semana de (\S+)! Troféu novo na estante!$/,m=>`🏆 You won the week of ${m[1]}! New trophy on the shelf!`],
  [/^(\d+)º$/,m=>`#${m[1]}`],
+ [/^Você ganhou \+(\d+) XP ⭐/,m=>`You earned +${m[1]} XP ⭐`],
+ [/^Você acertou (\d) de 3! \+(\d+) XP ⭐$/,m=>`You got ${m[1]} of 3 right! +${m[2]} XP ⭐`],
  [/^Nível (\d+)$/,m=>`Level ${m[1]}`],
  [/^(\d+) \/ (\d+) páginas \((\d+)%\)$/,m=>`${m[1]} / ${m[2]} pages (${m[3]}%)`],
  [/^Feito hoje: (.+)$/,m=>`Done today: ${m[1]}`],
