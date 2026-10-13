@@ -229,6 +229,14 @@
   .resp{background:#fff;border:3px solid var(--tinta);border-radius:16px;padding:8px 12px;margin-top:8px}
   .resp small{display:block;opacity:.7;font-weight:700}
   .resp b{display:block}
+  .rk-linha{display:flex;align-items:center;gap:10px;background:#fff;border:3px solid var(--tinta);border-radius:16px;padding:8px 12px;margin-top:8px;font-size:1.1rem}
+  .rk-linha.eu{background:#fff3c4;box-shadow:0 0 0 3px var(--amarelo)}
+  .rk-linha .pos{font-size:1.5rem;width:38px;text-align:center;font-weight:800}
+  .rk-linha .nm{flex:1;font-weight:700}
+  .rk-linha .xp{font-weight:800;color:var(--roxo)}
+  .trofeus{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+  .trofeu{background:linear-gradient(#fff7d1,#ffe27a);border:3px solid var(--tinta);border-radius:16px;padding:8px 10px;text-align:center;min-width:96px}
+  .trofeu b{display:block;font-size:2rem}
   .q-item{background:#fff;border:3px solid var(--tinta);border-radius:16px;padding:8px 12px;margin-top:8px;display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
   .det-topo{display:flex;gap:14px;align-items:center}
   .det-topo .capa{width:90px;aspect-ratio:3/4;border:3px solid var(--tinta);border-radius:10px;background:#ffd23f center/cover;display:flex;align-items:center;justify-content:center;font-size:2.4rem;box-shadow:3px 3px 0 var(--tinta);flex-shrink:0}
@@ -304,6 +312,7 @@
       <button class="atalho" style="background:var(--verde)" data-ir="registrar"><span class="ic">📖</span><span>Registrar Leitura<small>Quantas páginas você leu?</small></span></button>
       <button class="atalho" style="background:#9ddcff" data-ir="crono"><span class="ic">⏱️</span><span>Ler com Cronômetro<small>Desafio de 10 a 30 minutos</small></span></button>
       <button class="atalho" style="background:#c9b8ff" data-ir="quiz"><span class="ic">🧠</span><span>Quiz Diário<small id="quiz-status">Você entendeu a história?</small></span></button>
+      <button class="atalho" style="background:#ffc94d" data-ir="ranking"><span class="ic">🏆</span><span>Ranking da Semana<small id="rk-status">Quem leu mais esta semana?</small></span></button>
     </div>
     <div class="grid2">
       <button class="atalho mini" style="background:var(--amarelo)" data-ir="adicionar"><span class="ic">➕</span>Adicionar Livro</button>
@@ -450,6 +459,14 @@
     <button class="voltar" data-ir="painel">⬅ Voltar</button>
     <div class="mascote-area"><div class="mascote" id="m-medalhas"></div><div class="balao" id="balao-medalhas"></div></div>
     <div class="cartao" id="medalhas-caixa"></div>
+  </section>
+
+  <!-- RANKING -->
+  <section id="tela-ranking" class="tela">
+    <button class="voltar" data-ir="painel">⬅ Voltar</button>
+    <div class="mascote-area"><div class="mascote" id="m-ranking"></div><div class="balao" id="balao-ranking"></div></div>
+    <div class="cartao" id="ranking-caixa"></div>
+    <div class="cartao" id="trofeus-caixa"></div>
   </section>
 
   <!-- QUERO LER -->
@@ -644,6 +661,7 @@ function ir(tela){
   if(tela==='palavras') montarPalavras();
   if(tela==='medalhas') montarMedalhas();
   if(tela==='quero') montarQuero();
+  if(tela==='ranking') montarRanking();
   if(tela==='resumo') montarResumo();
   if(tela==='feedback') montarFeedback();
 }
@@ -1773,6 +1791,127 @@ gatePin=function(cx,onOk){ _gatePin(cx,()=>{ onOk(); if(cx.id==='resumo-caixa') 
 const _montarResumo=montarResumo;
 montarResumo=function(){ const c=document.getElementById('pais-config'); if(c) c.style.display='none'; _montarResumo.apply(this,arguments); };
 
+/* ============ RANKING DA SEMANA ENTRE IPADS (Firebase Realtime Database) ============ */
+const RANKING_DB='https://lili-leitura-default-rtdb.firebaseio.com';
+const semanaISO=(d)=>hojeISO(inicioSemana(d||new Date()));
+function semanaAnteriorISO(){ const x=inicioSemana(); x.setDate(x.getDate()-7); return hojeISO(x); }
+function xpSemana(us, iniISO){
+  us=us||u(); const ini=iniISO?new Date(iniISO+'T12:00:00'):inicioSemana();
+  const set=new Set(diasDaSemana(inicioSemana(ini)));
+  const leit=us.leituras.filter(l=>set.has(l.data));
+  const pag=leit.reduce((s,l)=>s+l.paginas,0), min=leit.reduce((s,l)=>s+(l.minutos||0),0);
+  const term=us.livros.filter(l=>l.status==='terminado' && l.terminadoEm && set.has(l.terminadoEm)).length;
+  const estrelas=Object.entries(us.quiz||{}).filter(([d])=>set.has(d)).reduce((s,[,q])=>s+(q.acertos||0),0);
+  const pal=(us.palavras||[]).filter(p=>set.has(p.criado)).length;
+  return pag + term*30 + estrelas*5 + pal*3 + Math.floor(min/5);
+}
+const normTurma=t=>(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,'-').replace(/[^A-Z0-9-]/g,'').slice(0,24);
+const novoId=()=>'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+async function rkGet(caminho){
+  const r=await fetch(`${RANKING_DB}/ranking/${caminho}.json`); if(!r.ok) throw new Error('rk '+r.status); return await r.json();
+}
+async function rkPublicar(forcar){
+  const us=u(), cfg=us&&us.ranking; if(!cfg || !RANKING_DB.startsWith('https')) return false;
+  const sem=semanaISO(), xp=xpSemana(us), marca=sem+'|'+xp+'|'+cfg.apelido+'|'+us.avatar;
+  if(!forcar && cfg.ultimoEnvio===marca) return true;
+  const r=await fetch(`${RANKING_DB}/ranking/${cfg.turma}/${sem}/${cfg.id}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({nome:cfg.apelido, avatar:us.avatar||'🦉', xp, at:Date.now()})});
+  if(!r.ok) throw new Error('rk put '+r.status);
+  cfg.ultimoEnvio=marca; salvar(); return true;
+}
+function ordenar(dados){
+  return Object.entries(dados||{}).map(([id,v])=>({id,...v})).filter(v=>typeof v.xp==='number').sort((a,b)=>b.xp-a.xp || (a.at||0)-(b.at||0));
+}
+async function rkVerificarTrofeu(){
+  const us=u(), cfg=us&&us.ranking; if(!cfg) return;
+  const prev=semanaAnteriorISO(); if(cfg.verificada===prev) return;
+  if(cfg.desde && cfg.desde>prev){ cfg.verificada=prev; salvar(); return; }
+  const lista=ordenar(await rkGet(`${cfg.turma}/${prev}`));
+  cfg.verificada=prev;
+  const top=lista.length?lista[0].xp:0, eu=lista.find(v=>v.id===cfg.id);
+  if(top>0 && eu && eu.xp===top){
+    us.trofeus=us.trofeus||[];
+    if(!us.trofeus.some(t=>t.semana===prev && t.turma===cfg.turma)){
+      us.trofeus.push({semana:prev, xp:eu.xp, turma:cfg.turma, amigos:lista.length});
+      salvar(); confete(); bip();
+      toast(`🏆 Você ganhou a semana de ${fmtData(prev)}! Troféu novo na estante!`);
+    }
+  }
+  salvar();
+}
+let rkSync=0;
+async function rkSincronizar(){
+  if(!atual || !u() || !u().ranking || Date.now()-rkSync<15000) return;
+  rkSync=Date.now();
+  try{ await rkPublicar(); await rkVerificarTrofeu(); }catch(e){}
+  atualizarRkStatus();
+}
+function atualizarRkStatus(){
+  const el=document.getElementById('rk-status'); if(!el||!u()) return;
+  const n=(u().trofeus||[]).length;
+  el.textContent = n ? `Você tem ${n} ${n===1?'troféu':'troféus'} 🏆` : (u().ranking ? `Turma ${u().ranking.turma}` : 'Quem leu mais esta semana?');
+}
+const _montarPainelRk=montarPainel;
+montarPainel=function(){ _montarPainelRk.apply(this,arguments); atualizarRkStatus(); rkSincronizar(); };
+
+function montarTrofeus(){
+  const cx=document.getElementById('trofeus-caixa'), tr=(u().trofeus||[]).slice().sort((a,b)=>a.semana<b.semana?1:-1);
+  cx.innerHTML=`<h2>🏆 Meus troféus</h2>`+(tr.length
+    ? `<div class="trofeus">${tr.map(t=>`<div class="trofeu"><b>🏆</b><div>Semana de ${fmtData(t.semana)}</div><small>${t.xp} XP · turma ${esc(t.turma)}</small></div>`).join('')}</div>`
+    : `<p>Ainda sem troféus. Termine uma semana em 1º lugar para ganhar o primeiro!</p>`);
+}
+async function montarRanking(){
+  const cx=document.getElementById('ranking-caixa'), us=u(), cfg=us.ranking, balao=document.getElementById('balao-ranking');
+  montarTrofeus();
+  if(!cfg){
+    balao.textContent='Entre na turma dos seus amigos e veja quem lê mais na semana! 🏆'; mascote('m-ranking','uau');
+    cx.innerHTML=`<h2>🏆 Entrar no ranking</h2>
+      <p>Use o mesmo código de turma que os seus amigos. No ranking aparecem só o apelido, o avatar e o XP da semana.</p>
+      <label for="rk-turma">Código da turma</label><input type="text" id="rk-turma" maxlength="24" placeholder="Ex.: AMIGOS-DO-PEDRO" autocomplete="off" autocapitalize="characters">
+      <label for="rk-apelido">Apelido no ranking</label><input type="text" id="rk-apelido" maxlength="20" value="${esc(atual)}" autocomplete="off">
+      <div class="erro" id="rk-erro"></div><button class="btn rosa" id="rk-entrar">Entrar no ranking 🏆</button>`;
+    document.getElementById('rk-entrar').onclick=async()=>{
+      const t=normTurma(document.getElementById('rk-turma').value), ap=document.getElementById('rk-apelido').value.trim().slice(0,20), er=document.getElementById('rk-erro');
+      if(t.length<4){ er.textContent='O código precisa ter de 4 a 24 letras ou números.'; return; }
+      if(!ap){ er.textContent='Escolha um apelido.'; return; }
+      us.ranking={turma:t, apelido:ap, id:novoId(), desde:semanaISO(), verificada:semanaAnteriorISO()}; salvar();
+      montarRanking();
+    };
+    return;
+  }
+  cx.innerHTML=`<h2>🏆 Turma ${esc(cfg.turma)}</h2><p>Carregando o ranking... ⏳</p>`;
+  const dias=diasDaSemana(inicioSemana());
+  let lista, prev;
+  try{
+    await rkPublicar(); await rkVerificarTrofeu(); montarTrofeus();
+    [lista, prev]=await Promise.all([rkGet(`${cfg.turma}/${semanaISO()}`), rkGet(`${cfg.turma}/${semanaAnteriorISO()}`)]);
+    lista=ordenar(lista); prev=ordenar(prev);
+  }catch(e){
+    cx.innerHTML=`<h2>🏆 Turma ${esc(cfg.turma)}</h2><p>Sem internet agora. Conecte para ver o ranking. 📶</p><button class="btn branco" id="rk-atualizar">🔄 Atualizar</button>`;
+    document.getElementById('rk-atualizar').onclick=()=>montarRanking();
+    balao.textContent='Preciso de internet para ver os seus amigos! 📶'; mascote('m-ranking','pensa'); return;
+  }
+  const medalha=i=>['🥇','🥈','🥉'][i]||`${i+1}º`;
+  const pos=lista.findIndex(v=>v.id===cfg.id);
+  const campeao=prev.length && prev[0].xp>0 ? prev[0] : null;
+  cx.innerHTML=`<h2>🏆 Turma ${esc(cfg.turma)}</h2>
+    <p>Semana de ${fmtData(dias[0])} a ${fmtData(dias[6])} · zera toda segunda</p>
+    ${lista.length?lista.map((v,i)=>`<div class="rk-linha ${v.id===cfg.id?'eu':''}"><span class="pos">${medalha(i)}</span><span style="font-size:1.6rem">${esc(v.avatar||'🦉')}</span><span class="nm">${esc(v.nome)}${v.id===cfg.id?' <small>(você)</small>':''}</span><span class="xp">${v.xp} XP</span></div>`).join('')
+      :'<p>Ninguém leu ainda nesta semana. Seja o primeiro! 🚀</p>'}
+    ${campeao?`<p style="margin-top:12px;font-weight:700">🥇 Campeão da semana passada: ${esc(campeao.nome)} (${campeao.xp} XP)</p>`:''}
+    <p style="margin-top:10px">Para um amigo entrar: abra o mesmo link e use o código ${esc(cfg.turma)}.</p>
+    <div class="grid2"><button class="btn azul" id="rk-atualizar">🔄 Atualizar</button><button class="btn branco" id="rk-sair">🚪 Sair da turma</button></div>`;
+  document.getElementById('rk-atualizar').onclick=()=>montarRanking();
+  document.getElementById('rk-sair').onclick=async()=>{
+    if(!confirm('Sair da turma? Seus troféus continuam guardados.')) return;
+    try{ await fetch(`${RANKING_DB}/ranking/${cfg.turma}/${semanaISO()}/${cfg.id}.json`,{method:'DELETE'}); }catch(e){}
+    delete us.ranking; salvar(); montarRanking();
+  };
+  if(pos===0 && lista[0].xp>0){ balao.textContent='Você está em 1º lugar! Continue lendo para ganhar o troféu! 🏆'; mascote('m-ranking','uau'); }
+  else if(pos>0){ const falta=lista[pos-1].xp-lista[pos].xp+1; balao.textContent=`Você está em ${pos+1}º lugar! Faltam ${falta} XP para passar ${lista[pos-1].nome}! 💪`; mascote('m-ranking','feliz'); }
+  else { balao.textContent='Leia hoje para aparecer no ranking! 📖'; mascote('m-ranking','pensa'); }
+}
+
 /* ============ MÚSICA DE FUNDO (composta no app, sem arquivo) ============ */
 const MUSICA_KEY='leituraDivertida_musica';
 const musica={ac:null,mestre:null,ligada:false,timer:null,prox:0,passo:0,frase:0};
@@ -1977,6 +2116,16 @@ const EN={
 'Resumo enviado! 📧':'Summary sent! 📧','Ainda não há leituras para resumir.':'There are no readings to summarize yet.','Não consegui enviar. Confira a internet.':"I couldn't send it. Check the internet.",
 'Toda semana vai um resumo de todas as crianças para':'Every week a summary of all the kids goes to',
 ', com uma cópia do histórico anexada. Ele sai quando o app é aberto com internet a partir de domingo às 18h.':', with a copy of the history attached. It goes out when the app is opened online from Sunday at 6 pm.',
+'Ranking da Semana':'Weekly Ranking','Quem leu mais esta semana?':'Who read the most this week?','🏆 Meus troféus':'🏆 My trophies',
+'Ainda sem troféus. Termine uma semana em 1º lugar para ganhar o primeiro!':'No trophies yet. Finish a week in 1st place to win your first one!',
+'Entre na turma dos seus amigos e veja quem lê mais na semana! 🏆':"Join your friends' group and see who reads the most this week! 🏆",'🏆 Entrar no ranking':'🏆 Join the ranking',
+'Use o mesmo código de turma que os seus amigos. No ranking aparecem só o apelido, o avatar e o XP da semana.':"Use the same group code as your friends. The ranking only shows the nickname, avatar and the week's XP.",
+'Código da turma':'Group code','Apelido no ranking':'Ranking nickname','Ex.: AMIGOS-DO-PEDRO':'E.g.: PEDROS-FRIENDS','Entrar no ranking 🏆':'Join the ranking 🏆',
+'O código precisa ter de 4 a 24 letras ou números.':'The code needs 4 to 24 letters or numbers.','Escolha um apelido.':'Choose a nickname.','Carregando o ranking... ⏳':'Loading the ranking... ⏳',
+'Sem internet agora. Conecte para ver o ranking. 📶':'No internet right now. Connect to see the ranking. 📶','🔄 Atualizar':'🔄 Refresh','🚪 Sair da turma':'🚪 Leave the group',
+'Preciso de internet para ver os seus amigos! 📶':'I need internet to see your friends! 📶','Ninguém leu ainda nesta semana. Seja o primeiro! 🚀':'Nobody has read yet this week. Be the first! 🚀',
+'(você)':'(you)','Sair da turma? Seus troféus continuam guardados.':'Leave the group? Your trophies stay saved.',
+'Você está em 1º lugar! Continue lendo para ganhar o troféu! 🏆':"You're in 1st place! Keep reading to win the trophy! 🏆",'Leia hoje para aparecer no ranking! 📖':'Read today to show up in the ranking! 📖',
 'Nível':'Level','XP':'XP','Criança':'Child','Conquistada!':'Earned!','nenhum':'none','Legalzinho!':'Pretty good!','Legalzinho! 🙂':'Pretty good! 🙂'
 };
 const MES_EN={Janeiro:'January',Fevereiro:'February','Março':'March',Abril:'April',Maio:'May',Junho:'June',Julho:'July',Agosto:'August',Setembro:'September',Outubro:'October',Novembro:'November',Dezembro:'December'};
@@ -1986,6 +2135,17 @@ const premioEN=s=>PREMIO_EN[s]||s;
 const livroEN=s=>s==='seu livro'?'your book':s;
 const PADROES=[
  [/^Meu (\S+) 📅$/,m=>`My ${MES_EN[m[1]]||m[1]} 📅`],
+ [/^Você tem (\d+) troféus? 🏆$/,m=>`You have ${m[1]} ${m[1]==='1'?'trophy':'trophies'} 🏆`],
+ [/^Turma (.+)$/,m=>`Group ${m[1]}`],
+ [/^🏆 Turma (.+)$/,m=>`🏆 Group ${m[1]}`],
+ [/^Semana de (\S+) a (\S+) · zera toda segunda$/,m=>`Week of ${m[1]} to ${m[2]} · resets every Monday`],
+ [/^Semana de (\S+)$/,m=>`Week of ${m[1]}`],
+ [/^(\d+) XP · turma (.+)$/,m=>`${m[1]} XP · group ${m[2]}`],
+ [/^🥇 Campeão da semana passada: (.+) \((\d+) XP\)$/,m=>`🥇 Last week's champion: ${m[1]} (${m[2]} XP)`],
+ [/^Para um amigo entrar: abra o mesmo link e use o código (.+)\.$/,m=>`For a friend to join: open the same link and use the code ${m[1]}.`],
+ [/^Você está em (\d+)º lugar! Faltam (\d+) XP para passar (.+)! 💪$/,m=>`You're in place #${m[1]}! ${m[2]} XP to pass ${m[3]}! 💪`],
+ [/^🏆 Você ganhou a semana de (\S+)! Troféu novo na estante!$/,m=>`🏆 You won the week of ${m[1]}! New trophy on the shelf!`],
+ [/^(\d+)º$/,m=>`#${m[1]}`],
  [/^Nível (\d+)$/,m=>`Level ${m[1]}`],
  [/^(\d+) \/ (\d+) páginas \((\d+)%\)$/,m=>`${m[1]} / ${m[2]} pages (${m[3]}%)`],
  [/^Feito hoje: (.+)$/,m=>`Done today: ${m[1]}`],
