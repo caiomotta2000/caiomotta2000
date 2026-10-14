@@ -259,7 +259,11 @@
 <div class="app">
 
   <!-- LOGIN -->
-  <div id="versao-app" style="position:fixed;right:10px;bottom:8px;font-size:.8rem;font-weight:700;opacity:.6;z-index:50;pointer-events:none">Lili v11 · 13/10/2026</div>
+  <button id="versao-app" onclick="abrirVersoes()" style="position:fixed;right:10px;bottom:8px;font-size:.8rem;font-weight:700;opacity:.7;z-index:50;background:none;border:none;font-family:inherit;color:inherit;text-decoration:underline;cursor:pointer">Lili v12 · 13/10/2026</button>
+  <div id="versoes-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;overflow:auto;padding:20px" onclick="if(event.target===this)this.style.display='none'">
+    <div class="cartao" style="max-width:560px;margin:20px auto"><h2>🗒️ Histórico de versões</h2><div id="versoes-lista"></div>
+    <button class="btn verde" onclick="document.getElementById('versoes-modal').style.display='none'">Fechar</button></div>
+  </div>
   <section id="tela-login" class="tela ativa">
     <div class="titulo-logo">📚 Leitura Divertida!</div>
     <div class="mascote-area">
@@ -401,6 +405,7 @@
   <!-- HISTÓRICO -->
   <section id="tela-historico" class="tela">
     <button class="voltar" data-ir="painel">⬅ Voltar</button>
+    <div class="cartao" id="log-leituras"></div>
     <div class="cartao">
       <h2>💾 Guardar meu histórico</h2>
       <p>Salve um arquivo com todos os cadastros (livros, leituras, quizzes e respostas). No iPad, escolha <b>Salvar em Arquivos</b>. Para recuperar em outro aparelho, use “Restaurar”.</p>
@@ -841,7 +846,7 @@ document.getElementById('btn-registrar').onclick=()=>{
   if(!capitulo){ erro.textContent='Escreva qual capítulo você leu 📑'; mascote('m-registrar','ops',true); return; }
   if(resumo.split(/\s+/).filter(Boolean).length<10){ erro.textContent='O resumo precisa ter pelo menos 10 palavras ✍️'; mascote('m-registrar','ops',true); return; }
   const minutos=parseInt(document.getElementById('r-minutos').value,10);
-  const reg={id:id(), livro, paginas:pag, idioma:langRegistro, data, capitulo, resumo, xpQuiz:0}; if(minutos>0 && minutos<=600) reg.minutos=minutos;
+  const reg={id:id(), livro, paginas:pag, idioma:langRegistro, data, capitulo, resumo, xpQuiz:0, salvoEm:new Date().toISOString()}; if(minutos>0 && minutos<=600) reg.minutos=minutos;
   u().leituras.push(reg); salvar(); registroPendente=null;
   erro.textContent=''; document.getElementById('r-capitulo').value=''; document.getElementById('r-resumo').value='';
   quizIA(reg); return;
@@ -1090,7 +1095,7 @@ function eventosHistorico(){
   return ev.sort((a,b)=> a.data===b.data ? ordem[b.tipo]-ordem[a.tipo] : (a.data<b.data?1:-1));
 }
 let filtroHist='todos';
-function montarHistorico(){
+function montarHistorico(){ try{ montarLog(); }catch(e){}
   const todos=eventosHistorico(), ev=filtroHist==='todos'?todos:todos.filter(e=>e.tipo===filtroHist);
   const user=u(), totalPag=user.leituras.reduce((s,l)=>s+l.paginas,0);
   const ult=banco.ultimoBackup;
@@ -1824,7 +1829,7 @@ async function quizIA(reg){
   const cx=document.getElementById('r-quiz'), livro=u().livros.find(l=>l.id===reg.livro)||{titulo:''}, balao=document.getElementById('balao-registrar');
   cx.style.display='block'; cx.innerHTML='<h2>🧠 Quiz do capítulo</h2><p>A Lili está preparando 3 perguntas sobre o que você leu... ⏳</p>';
   balao.textContent='Leitura salva! Agora vamos ver o que você entendeu! 🧠'; mascote('m-registrar','pensa'); cx.scrollIntoView({behavior:'smooth'});
-  let qs; try{ qs=await gerarPerguntasIA(livro, reg); }catch(e){
+  let qs; try{ qs=await gerarPerguntasIA(livro, reg); }catch(e){ reg.iaErros=(reg.iaErros||0)+1; salvar();
     cx.innerHTML='<h2>🧠 Quiz do capítulo</h2><p>A Lili não conseguiu criar o quiz agora (precisa de internet). Sua leitura ficou salva, mas sem XP do quiz.</p><button class="btn azul" id="rq-tentar">🔄 Tentar de novo</button><button class="btn branco" id="rq-sair">⬅ Voltar ao painel</button>';
     document.getElementById('rq-tentar').onclick=()=>quizIA(reg); document.getElementById('rq-sair').onclick=()=>{ cx.style.display='none'; ir('painel'); }; return; }
   if(qs.aberta) return quizAberto(reg, qs, livro);
@@ -1835,7 +1840,7 @@ async function quizIA(reg){
     cx.querySelectorAll(`.rq-op[data-q="${i}"]`).forEach(x=>{ const kk=+x.dataset.k; x.disabled=true;
       if(kk===qs[i].certa){ x.style.background='#b8f2c2'; x.textContent='✅ '+x.textContent; } else if(kk===k){ x.style.background='#ffc2c2'; x.textContent='❌ '+x.textContent; } });
     if(resp.filter(v=>v!=null).length===3){
-      const ac=qs.filter((q,j)=>resp[j]===q.certa).length; reg.xpQuiz=ac*10; reg.quiz=qs.map((q,j)=>({p:q.p,certa:q.opcoes[q.certa],resp:q.opcoes[resp[j]]})); salvar();
+      const ac=qs.filter((q,j)=>resp[j]===q.certa).length; reg.xpQuiz=ac*10; reg.quizTipo='multipla'; reg.quiz=qs.map((q,j)=>({p:q.p,opcoes:q.opcoes,certa:q.opcoes[q.certa],resp:q.opcoes[resp[j]],acertou:resp[j]===q.certa})); reg.quizEm=new Date().toISOString(); salvar();
       document.getElementById('rq-fim').innerHTML=`<div class="resp" style="margin-top:14px;background:#fff3c4"><b>Você acertou ${ac} de 3! +${ac*10} XP ⭐</b></div><button class="btn verde" id="rq-ok">Voltar ao painel 🏠</button>`;
       document.getElementById('rq-ok').onclick=()=>{ cx.style.display='none'; ir('painel'); };
       balao.textContent= ac===3?'Uau! Acertou tudo! Você entendeu muito bem! 🏆': ac?'Muito bem! Continue lendo com atenção! 🌟':'Tudo bem! Na próxima, leia com calma e tente de novo! 💪';
@@ -1860,12 +1865,46 @@ function quizAberto(reg, qs, livro){
     if(rs.some(r=>r.split(/\s+/).filter(Boolean).length<3)){ document.getElementById('rq-erro').textContent='Responda cada pergunta com pelo menos 3 palavras ✍️'; return; }
     const bt=document.getElementById('rq-enviar'); bt.disabled=true; bt.textContent='A Lili está lendo suas respostas... ⏳';
     let av; try{ av=await avaliarIA(livro, reg, qs, rs); if(av.notas.length<3) throw 0; }catch(e){ av={notas:rs.map(r=>r.split(/\s+/).length>=8?7:5), comentario:''}; }
-    const xp=av.notas.reduce((a,b)=>a+b,0); reg.xpQuiz=xp; reg.quiz=qs.map((q,i)=>({p:q.p,resp:rs[i],nota:av.notas[i]})); salvar();
+    const xp=av.notas.reduce((a,b)=>a+b,0); reg.xpQuiz=xp; reg.quizTipo='aberta'; reg.quiz=qs.map((q,i)=>({p:q.p,resp:rs[i],nota:av.notas[i]})); reg.comentarioIA=av.comentario; reg.quizEm=new Date().toISOString(); salvar();
     bt.style.display='none';
     document.getElementById('rq-fim').innerHTML=`<div class="resp" style="margin-top:14px;background:#fff3c4"><b>Você ganhou +${xp} XP ⭐</b>${esc(av.comentario)}</div><button class="btn verde" id="rq-ok">Voltar ao painel 🏠</button>`;
     document.getElementById('rq-ok').onclick=()=>{ cx.style.display='none'; ir('painel'); };
     balao.textContent= xp>=24?'Que respostas incríveis! 🏆':'Muito bem! Continue lendo com atenção! 🌟'; mascote('m-registrar','uau',true); confete(); rkSync=0; rkSincronizar();
   };
+}
+
+/* ============ LOG DAS LEITURAS ============ */
+function montarLog(){
+  const cx=document.getElementById('log-leituras'); if(!cx) return;
+  const ls=u().leituras.slice().sort((a,b)=>((b.salvoEm||b.data)>(a.salvoEm||a.data)?1:-1));
+  const hora=iso=>{ const d=new Date(iso); return `${fmtData(hojeISO(d))} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+  cx.innerHTML='<h2>📒 Log das leituras</h2>'+(ls.length?ls.map(l=>{
+    const lv=u().livros.find(b=>b.id===l.livro)||{titulo:'?'};
+    const xp=typeof l.xpQuiz==='number'?`${l.xpQuiz} XP`:`${l.paginas} XP`;
+    const q=(l.quiz||[]).map((x,i)=>`<div style="margin-top:6px"><b>${i+1}. ${esc(x.p)}</b>${x.opcoes?`<br><small>Opções: ${x.opcoes.map(esc).join(' · ')}</small>`:''}<br>Resposta: ${esc(x.resp||'')}${x.certa!=null?` ${x.acertou?'✅':'❌'}<br><small>Certa: ${esc(x.certa)}</small>`:''}${x.nota!=null?` <small>(nota ${x.nota}/10)</small>`:''}</div>`).join('');
+    return `<details class="q-item" style="display:block"><summary><b>${fmtData(l.data)}</b> · ${esc(lv.titulo)}${l.capitulo?` · ${esc(l.capitulo)}`:''} · ${xp}</summary>
+      <div style="margin-top:6px"><small>Salvo em: ${l.salvoEm?hora(l.salvoEm):fmtData(l.data)}</small><br>Páginas: ${l.paginas}${l.minutos?` · Minutos: ${l.minutos}`:''} · Idioma: ${l.idioma==='en'?'🇺🇸':'🇧🇷'}</div>
+      ${l.resumo?`<div style="margin-top:6px"><b>Resumo:</b> ${esc(l.resumo)}</div>`:''}
+      ${q?`<div style="margin-top:6px"><b>Quiz da IA (${l.quizTipo==='aberta'?'perguntas abertas':'múltipla escolha'})</b>${q}</div>`:(l.resumo?`<div style="margin-top:6px"><small>Quiz da IA ainda não respondido${l.iaErros?` (falhas da IA: ${l.iaErros})`:''}.</small></div>`:'')}
+      ${l.comentarioIA?`<div style="margin-top:6px"><b>Comentário da IA:</b> ${esc(l.comentarioIA)}</div>`:''}
+    </details>`;}).join(''):'<p>Nenhuma leitura registrada ainda.</p>');
+}
+
+/* ============ HISTÓRICO DE VERSÕES ============ */
+const VERSOES=[
+ ['v12','13/10/2026','📒 Log das leituras no Histórico (resumo, perguntas, respostas e comentário da IA) e este histórico de versões.'],
+ ['v11','13/10/2026','Registro com capítulo e resumo; a IA cria 3 perguntas e o XP vem dos acertos (ou de perguntas abertas). Número da versão na tela.'],
+ ['v10','13/10/2026','🏆 Ranking semanal entre amigos com código de turma e troféu para o 1º lugar da semana.'],
+ ['v9','13/10/2026','App instalável no iPad, funciona offline, lembrete da Lili e resumo semanal por e-mail para os pais.'],
+ ['v8','13/10/2026','💌 Botão para mandar sugestões e problemas.'],
+ ['v7','13/10/2026','🇧🇷/🇺🇸 Botão para trocar o idioma do app.'],
+ ['v6','13/10/2026','🎵 Música de fundo de caixinha de música.'],
+ ['v5','13/10/2026','Diário do dia obrigatório antes de registrar nova leitura; saiu a competição entre irmãos.'],
+ ['v1–v4','13/10/2026','Base do app: registro de leituras, gráfico PT/EN, estante, quiz, diário do livro, medalhas, cronômetro, caderno de palavras, Quero Ler, certificado, área dos pais e backup.']
+];
+function abrirVersoes(){
+  document.getElementById('versoes-lista').innerHTML=VERSOES.map(([v,d,t])=>`<div class="q-item" style="display:block"><b>${v}</b> <small>· ${d}</small><div>${t}</div></div>`).join('');
+  document.getElementById('versoes-modal').style.display='block';
 }
 
 /* ============ RANKING DA SEMANA ENTRE IPADS (Firebase Realtime Database) ============ */
@@ -2209,6 +2248,8 @@ const EN={
 'Leitura salva! Agora vamos ver o que você entendeu! 🧠':"Reading saved! Now let's see what you understood! 🧠",
 'A Lili não conseguiu criar o quiz agora (precisa de internet). Sua leitura ficou salva, mas sem XP do quiz.':"Lili couldn't create the quiz now (it needs internet). Your reading was saved, but without quiz XP.",
 'Responda com suas palavras. Cada resposta vale até 10 XP!':'Answer in your own words. Each answer is worth up to 10 XP!','Enviar respostas ✅':'Send answers ✅','Responda cada pergunta com pelo menos 3 palavras ✍️':'Answer each question with at least 3 words ✍️','A Lili está lendo suas respostas... ⏳':'Lili is reading your answers... ⏳','Que respostas incríveis! 🏆':'What amazing answers! 🏆',
+'📒 Log das leituras':'📒 Reading log','Nenhuma leitura registrada ainda.':'No readings yet.','Resumo:':'Summary:','Comentário da IA:':'AI comment:',
+'🗒️ Histórico de versões':'🗒️ Version history','Fechar':'Close',
 '🔄 Tentar de novo':'🔄 Try again','⬅ Voltar ao painel':'⬅ Back to dashboard','Cada acerto vale 10 XP!':'Each right answer is worth 10 XP!','Voltar ao painel 🏠':'Back to dashboard 🏠',
 'Uau! Acertou tudo! Você entendeu muito bem! 🏆':'Wow! All correct! You understood it really well! 🏆','Muito bem! Continue lendo com atenção! 🌟':'Well done! Keep reading carefully! 🌟',
 'Tudo bem! Na próxima, leia com calma e tente de novo! 💪':"That's OK! Next time, read calmly and try again! 💪",
