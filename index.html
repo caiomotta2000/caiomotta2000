@@ -259,7 +259,7 @@
 <div class="app">
 
   <!-- LOGIN -->
-  <button id="versao-app" onclick="abrirVersoes()" style="position:fixed;right:10px;bottom:8px;font-size:.8rem;font-weight:700;opacity:.7;z-index:50;background:none;border:none;font-family:inherit;color:inherit;text-decoration:underline;cursor:pointer">Lili v12 · 13/10/2026</button>
+  <button id="versao-app" onclick="abrirVersoes()" style="position:fixed;right:10px;bottom:8px;font-size:.8rem;font-weight:700;opacity:.7;z-index:50;background:none;border:none;font-family:inherit;color:inherit;text-decoration:underline;cursor:pointer">Lili 1.0 · 13/10/2026</button>
   <div id="versoes-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;overflow:auto;padding:20px" onclick="if(event.target===this)this.style.display='none'">
     <div class="cartao" style="max-width:560px;margin:20px auto"><h2>🗒️ Histórico de versões</h2><div id="versoes-lista"></div>
     <button class="btn verde" onclick="document.getElementById('versoes-modal').style.display='none'">Fechar</button></div>
@@ -316,7 +316,6 @@
     <div class="atalhos">
       <button class="atalho" style="background:var(--verde)" data-ir="registrar"><span class="ic">📖</span><span>Registrar Leitura<small>Quantas páginas você leu?</small></span></button>
       <button class="atalho" style="background:#9ddcff" data-ir="crono"><span class="ic">⏱️</span><span>Ler com Cronômetro<small>Desafio de 10 a 30 minutos</small></span></button>
-      <button class="atalho" style="background:#c9b8ff" data-ir="quiz"><span class="ic">🧠</span><span>Quiz Diário<small id="quiz-status">Você entendeu a história?</small></span></button>
       <button class="atalho" style="background:#ffc94d" data-ir="ranking"><span class="ic">🏆</span><span>Ranking da Semana<small id="rk-status">Quem leu mais esta semana?</small></span></button>
     </div>
     <div class="grid2">
@@ -740,7 +739,7 @@ function montarPainel(){
   document.getElementById('meta-enche').style.width=pct+'%';
   document.getElementById('meta-txt').textContent=`${total} / ${user.meta} páginas (${pct}%)`;
   const feitoQuiz=user.quiz[hojeISO()];
-  document.getElementById('quiz-status').textContent= feitoQuiz ? `Feito hoje: ${feitoQuiz.acertos}/3 ⭐` : 'Você entendeu a história?';
+  const qsEl=document.getElementById('quiz-status'); if(qsEl) qsEl.textContent= feitoQuiz ? `Feito hoje: ${feitoQuiz.acertos}/3 ⭐` : 'Você entendeu a história?';
 
   let frase, humor='feliz';
   const pendP=diarioPendente(hojeISO());
@@ -1597,7 +1596,7 @@ function montarResumo(){
 // Para registrar a leitura de um dia, o último dia com leitura antes dele precisa ter diário escrito
 // (uma resposta escrita no Quiz Diário daquele dia ou o "Diário do dia").
 function temDiario(dia){ return u().leituras.some(l=>l.data===dia && l.resumo) || (u().respostas||[]).some(r=>r.data===dia && r.r && r.r.trim()); }
-function diarioPendente(dataAlvo){
+function diarioPendente(dataAlvo){ return null; // 1.0: o resumo obrigatório substitui o Diário do dia
   const dias=[...new Set(u().leituras.map(l=>l.data))].filter(d=>d<dataAlvo).sort();
   const ult=dias.pop();
   return (ult && !temDiario(ult)) ? ult : null;
@@ -1784,6 +1783,10 @@ function montarConfigPais(){
     <p>Toda semana vai um resumo de todas as crianças para <b>${RESUMO_EMAIL}</b>, com uma cópia do histórico anexada. Ele sai quando o app é aberto com internet a partir de domingo às 18h.</p>
     <p style="font-weight:700;color:var(--roxo)">${banco.resumoEmailUltimo?'Último envio: '+fmtData(banco.resumoEmailUltimo):'Nenhum resumo enviado ainda.'}</p>
     <button class="btn azul" id="cfg-enviar">📨 Enviar resumo desta semana agora</button>
+    <h2 style="margin-top:18px">🤖 IA reserva (opcional)</h2>
+    <p>O quiz usa uma IA gratuita. Se ela falhar, o app pode usar o Gemini com uma chave sua (fica só neste iPad).</p>
+    <input type="password" id="cfg-gemini" placeholder="Chave do Gemini (AIza...)" value="${esc(chaveGemini())}" autocomplete="off">
+    <button class="btn branco" id="cfg-gemini-ok">Salvar chave 🔑</button>
     <h2 style="margin-top:18px">📲 App no iPad</h2>
     ${inst?'<p>✅ O app está instalado na Tela de Início e funciona sem internet.</p>'
       :`<p>Instale o app para ele ganhar ícone, funcionar sem internet e proteger o histórico:</p>
@@ -1793,6 +1796,7 @@ function montarConfigPais(){
     if(!/^\d\d:\d\d$/.test(v)){ toast('Escolha um horário ⏰'); return; }
     us.lembrete=v; salvar(); toast('Lembrete salvo! ⏰');
   };
+  document.getElementById('cfg-gemini-ok').onclick=()=>{ const v=document.getElementById('cfg-gemini').value.trim(); try{ v?localStorage.setItem('leituraDivertida_gemini',v):localStorage.removeItem('leituraDivertida_gemini'); }catch(e){} toast(v?'Chave salva! 🔑':'Chave removida'); };
   document.getElementById('cfg-hora-off').onclick=()=>{ delete us.lembrete; salvar(); document.getElementById('cfg-hora').value=''; toast('Lembrete desligado'); };
   document.getElementById('cfg-enviar').onclick=async()=>{
     const b=document.getElementById('cfg-enviar'); b.disabled=true; toast('Enviando... ✈️');
@@ -1817,10 +1821,7 @@ Se NÃO conhece o livro com segurança, não invente: crie 3 perguntas abertas e
 Escreva em ${en?'inglês simples':'português'}. Responda SOMENTE com JSON, um destes formatos:
 {"tipo":"multipla","perguntas":[{"p":"pergunta","opcoes":["a","b","c","d"],"certa":0}]}
 {"tipo":"aberta","perguntas":[{"p":"pergunta"}]}`;
-  const r=await fetch('https://text.pollinations.ai/openai',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'openai',messages:[{role:'user',content:prompt}]})});
-  if(!r.ok) throw new Error('ia '+r.status);
-  const txt=(await r.json()).choices[0].message.content, j=JSON.parse(txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1));
+  const txt=await chamarIA(prompt), j=JSON.parse(txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1));
   if(j.tipo==='aberta'){ const ab=(j.perguntas||[]).filter(q=>q.p).slice(0,3); if(ab.length<3) throw new Error('ia formato'); ab.aberta=true; return ab; }
   const qs=(j.perguntas||[]).filter(q=>q.p && Array.isArray(q.opcoes) && q.opcoes.length>=2 && q.opcoes[q.certa]!=null).slice(0,3);
   if(qs.length<3) throw new Error('ia formato'); return qs;
@@ -1842,7 +1843,7 @@ async function quizIA(reg){
     if(resp.filter(v=>v!=null).length===3){
       const ac=qs.filter((q,j)=>resp[j]===q.certa).length; reg.xpQuiz=ac*10; reg.quizTipo='multipla'; reg.quiz=qs.map((q,j)=>({p:q.p,opcoes:q.opcoes,certa:q.opcoes[q.certa],resp:q.opcoes[resp[j]],acertou:resp[j]===q.certa})); reg.quizEm=new Date().toISOString(); salvar();
       document.getElementById('rq-fim').innerHTML=`<div class="resp" style="margin-top:14px;background:#fff3c4"><b>Você acertou ${ac} de 3! +${ac*10} XP ⭐</b></div><button class="btn verde" id="rq-ok">Voltar ao painel 🏠</button>`;
-      document.getElementById('rq-ok').onclick=()=>{ cx.style.display='none'; ir('painel'); };
+      document.getElementById('rq-ok').onclick=()=>{ cx.style.display='none'; ir('painel'); }; blocoPais(reg, livro);
       balao.textContent= ac===3?'Uau! Acertou tudo! Você entendeu muito bem! 🏆': ac?'Muito bem! Continue lendo com atenção! 🌟':'Tudo bem! Na próxima, leia com calma e tente de novo! 💪';
       mascote('m-registrar',ac?'uau':'pensa',true); if(ac) confete(); rkSync=0; rkSincronizar&&rkSincronizar();
     }
@@ -1853,8 +1854,7 @@ async function avaliarIA(livro, reg, qs, rs){
   const prompt=`Você é uma professora gentil avaliando uma criança de 9 anos. Livro: "${livro.titulo}", ${reg.capitulo}. Resumo dela: "${reg.resumo}".
 ${qs.map((q,i)=>`Pergunta ${i+1}: ${q.p}\nResposta: ${rs[i]}`).join('\n')}
 Dê uma nota de 0 a 10 para cada resposta, valorizando esforço, coerência com a história e frases completas (resposta vazia ou sem sentido = 0). Responda SOMENTE JSON: {"notas":[n,n,n],"comentario":"uma frase curta e carinhosa em ${reg.idioma==='en'?'inglês':'português'}"}`;
-  const r=await fetch('https://text.pollinations.ai/openai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'openai',messages:[{role:'user',content:prompt}]})});
-  const txt=(await r.json()).choices[0].message.content, j=JSON.parse(txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1));
+  const txt=await chamarIA(prompt), j=JSON.parse(txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1));
   return {notas:(j.notas||[]).slice(0,3).map(n=>Math.max(0,Math.min(10,Math.round(+n||0)))), comentario:j.comentario||''};
 }
 function quizAberto(reg, qs, livro){
@@ -1868,7 +1868,7 @@ function quizAberto(reg, qs, livro){
     const xp=av.notas.reduce((a,b)=>a+b,0); reg.xpQuiz=xp; reg.quizTipo='aberta'; reg.quiz=qs.map((q,i)=>({p:q.p,resp:rs[i],nota:av.notas[i]})); reg.comentarioIA=av.comentario; reg.quizEm=new Date().toISOString(); salvar();
     bt.style.display='none';
     document.getElementById('rq-fim').innerHTML=`<div class="resp" style="margin-top:14px;background:#fff3c4"><b>Você ganhou +${xp} XP ⭐</b>${esc(av.comentario)}</div><button class="btn verde" id="rq-ok">Voltar ao painel 🏠</button>`;
-    document.getElementById('rq-ok').onclick=()=>{ cx.style.display='none'; ir('painel'); };
+    document.getElementById('rq-ok').onclick=()=>{ cx.style.display='none'; ir('painel'); }; blocoPais(reg, livro);
     balao.textContent= xp>=24?'Que respostas incríveis! 🏆':'Muito bem! Continue lendo com atenção! 🌟'; mascote('m-registrar','uau',true); confete(); rkSync=0; rkSincronizar();
   };
 }
@@ -1886,25 +1886,54 @@ function montarLog(){
       <div style="margin-top:6px"><small>Salvo em: ${l.salvoEm?hora(l.salvoEm):fmtData(l.data)}</small><br>Páginas: ${l.paginas}${l.minutos?` · Minutos: ${l.minutos}`:''} · Idioma: ${l.idioma==='en'?'🇺🇸':'🇧🇷'}</div>
       ${l.resumo?`<div style="margin-top:6px"><b>Resumo:</b> ${esc(l.resumo)}</div>`:''}
       ${q?`<div style="margin-top:6px"><b>Quiz da IA (${l.quizTipo==='aberta'?'perguntas abertas':'múltipla escolha'})</b>${q}</div>`:(l.resumo?`<div style="margin-top:6px"><small>Quiz da IA ainda não respondido${l.iaErros?` (falhas da IA: ${l.iaErros})`:''}.</small></div>`:'')}
+      ${l.perguntaPais?`<div style="margin-top:6px"><b>Pergunta dos pais:</b> ${esc(l.perguntaPais.p)}<br>Resposta: ${esc(l.perguntaPais.resp)} ${l.perguntaPais.acertou?'✅':'❌'} <small>Certa: ${esc(l.perguntaPais.certa)}</small></div>`:''}
       ${l.comentarioIA?`<div style="margin-top:6px"><b>Comentário da IA:</b> ${esc(l.comentarioIA)}</div>`:''}
     </details>`;}).join(''):'<p>Nenhuma leitura registrada ainda.</p>');
 }
 
 /* ============ HISTÓRICO DE VERSÕES ============ */
 const VERSOES=[
- ['v12','13/10/2026','📒 Log das leituras no Histórico (resumo, perguntas, respostas e comentário da IA) e este histórico de versões.'],
- ['v11','13/10/2026','Registro com capítulo e resumo; a IA cria 3 perguntas e o XP vem dos acertos (ou de perguntas abertas). Número da versão na tela.'],
- ['v10','13/10/2026','🏆 Ranking semanal entre amigos com código de turma e troféu para o 1º lugar da semana.'],
- ['v9','13/10/2026','App instalável no iPad, funciona offline, lembrete da Lili e resumo semanal por e-mail para os pais.'],
- ['v8','13/10/2026','💌 Botão para mandar sugestões e problemas.'],
- ['v7','13/10/2026','🇧🇷/🇺🇸 Botão para trocar o idioma do app.'],
- ['v6','13/10/2026','🎵 Música de fundo de caixinha de música.'],
- ['v5','13/10/2026','Diário do dia obrigatório antes de registrar nova leitura; saiu a competição entre irmãos.'],
- ['v1–v4','13/10/2026','Base do app: registro de leituras, gráfico PT/EN, estante, quiz, diário do livro, medalhas, cronômetro, caderno de palavras, Quero Ler, certificado, área dos pais e backup.']
+ ['1.0','13/10/2026','🚀 Lançamento! Um só quiz (o da IA, com a pergunta dos pais como bônus), o resumo substitui o Diário do dia, IA reserva opcional (Gemini) e app mais leve no modo inglês.'],
+ ['beta 12','13/10/2026','📒 Log das leituras no Histórico (resumo, perguntas, respostas e comentário da IA) e este histórico de versões.'],
+ ['beta 11','13/10/2026','Registro com capítulo e resumo; a IA cria 3 perguntas e o XP vem dos acertos (ou de perguntas abertas). Número da versão na tela.'],
+ ['beta 10','13/10/2026','🏆 Ranking semanal entre amigos com código de turma e troféu para o 1º lugar da semana.'],
+ ['beta 9','13/10/2026','App instalável no iPad, funciona offline, lembrete da Lili e resumo semanal por e-mail para os pais.'],
+ ['beta 8','13/10/2026','💌 Botão para mandar sugestões e problemas.'],
+ ['beta 7','13/10/2026','🇧🇷/🇺🇸 Botão para trocar o idioma do app.'],
+ ['beta 6','13/10/2026','🎵 Música de fundo de caixinha de música.'],
+ ['beta 5','13/10/2026','Diário do dia obrigatório antes de registrar nova leitura; saiu a competição entre irmãos.'],
+ ['beta 1–4','13/10/2026','Base do app: registro de leituras, gráfico PT/EN, estante, quiz, diário do livro, medalhas, cronômetro, caderno de palavras, Quero Ler, certificado, área dos pais e backup.']
 ];
 function abrirVersoes(){
   document.getElementById('versoes-lista').innerHTML=VERSOES.map(([v,d,t])=>`<div class="q-item" style="display:block"><b>${v}</b> <small>· ${d}</small><div>${t}</div></div>`).join('');
   document.getElementById('versoes-modal').style.display='block';
+}
+
+/* ============ 1.0: IA com reserva Gemini + pergunta dos pais ============ */
+const chaveGemini=()=>{ try{ return localStorage.getItem('leituraDivertida_gemini')||''; }catch(e){ return ''; } };
+async function chamarIA(prompt){
+  try{
+    const r=await fetch('https://text.pollinations.ai/openai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'openai',messages:[{role:'user',content:prompt}]})});
+    if(!r.ok) throw new Error('ia '+r.status);
+    const t=(await r.json()).choices[0].message.content; if(!t||t.indexOf('{')<0) throw new Error('ia vazia'); return t;
+  }catch(e){
+    const k=chaveGemini(); if(!k) throw e;
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(k),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+    if(!r.ok) throw new Error('gemini '+r.status);
+    return (await r.json()).candidates[0].content.parts.map(p=>p.text||'').join('');
+  }
+}
+function blocoPais(reg, livro){
+  const ps=(livro&&livro.perguntas)||[]; if(!ps.length) return;
+  const n=u().leituras.filter(l=>l.livro===livro.id).length, q=ps[n%ps.length], fim=document.getElementById('rq-fim'); if(!fim||!q||!q.o) return;
+  const box=document.createElement('div'); box.style.marginTop='14px';
+  box.innerHTML=`<b>⭐ Pergunta dos pais: ${esc(q.p)}</b>`+q.o.map((o,k)=>`<button class="btn branco rq-pais" data-k="${k}" style="margin-top:6px;text-align:left">${esc(o)}</button>`).join('');
+  fim.insertBefore(box, fim.lastElementChild);
+  box.querySelectorAll('.rq-pais').forEach(b=>b.onclick=()=>{
+    if(reg.perguntaPais) return; const k=+b.dataset.k, ok=k===q.c;
+    box.querySelectorAll('.rq-pais').forEach(x=>{ x.disabled=true; if(+x.dataset.k===q.c){ x.style.background='#b8f2c2'; x.textContent='✅ '+x.textContent; } else if(+x.dataset.k===k){ x.style.background='#ffc2c2'; x.textContent='❌ '+x.textContent; } });
+    reg.perguntaPais={p:q.p, opcoes:q.o, certa:q.o[q.c], resp:q.o[k], acertou:ok}; if(ok){ reg.xpQuiz+=10; confete(); toast('+10 XP ⭐'); } salvar(); rkSync=0; rkSincronizar();
+  });
 }
 
 /* ============ RANKING DA SEMANA ENTRE IPADS (Firebase Realtime Database) ============ */
@@ -2249,7 +2278,7 @@ const EN={
 'A Lili não conseguiu criar o quiz agora (precisa de internet). Sua leitura ficou salva, mas sem XP do quiz.':"Lili couldn't create the quiz now (it needs internet). Your reading was saved, but without quiz XP.",
 'Responda com suas palavras. Cada resposta vale até 10 XP!':'Answer in your own words. Each answer is worth up to 10 XP!','Enviar respostas ✅':'Send answers ✅','Responda cada pergunta com pelo menos 3 palavras ✍️':'Answer each question with at least 3 words ✍️','A Lili está lendo suas respostas... ⏳':'Lili is reading your answers... ⏳','Que respostas incríveis! 🏆':'What amazing answers! 🏆',
 '📒 Log das leituras':'📒 Reading log','Nenhuma leitura registrada ainda.':'No readings yet.','Resumo:':'Summary:','Comentário da IA:':'AI comment:',
-'🗒️ Histórico de versões':'🗒️ Version history','Fechar':'Close',
+'🗒️ Histórico de versões':'🗒️ Version history','Fechar':'Close','🤖 IA reserva (opcional)':'🤖 Backup AI (optional)','Salvar chave 🔑':'Save key 🔑','Chave salva! 🔑':'Key saved! 🔑','Chave removida':'Key removed','O quiz usa uma IA gratuita. Se ela falhar, o app pode usar o Gemini com uma chave sua (fica só neste iPad).':'The quiz uses a free AI. If it fails, the app can use Gemini with your own key (stored only on this iPad).',
 '🔄 Tentar de novo':'🔄 Try again','⬅ Voltar ao painel':'⬅ Back to dashboard','Cada acerto vale 10 XP!':'Each right answer is worth 10 XP!','Voltar ao painel 🏠':'Back to dashboard 🏠',
 'Uau! Acertou tudo! Você entendeu muito bem! 🏆':'Wow! All correct! You understood it really well! 🏆','Muito bem! Continue lendo com atenção! 🌟':'Well done! Keep reading carefully! 🌟',
 'Tudo bem! Na próxima, leia com calma e tente de novo! 💪':"That's OK! Next time, read calmly and try again! 💪",
@@ -2273,6 +2302,7 @@ const PADROES=[
  [/^Você está em (\d+)º lugar! Faltam (\d+) XP para passar (.+)! 💪$/,m=>`You're in place #${m[1]}! ${m[2]} XP to pass ${m[3]}! 💪`],
  [/^🏆 Você ganhou a semana de (\S+)! Troféu novo na estante!$/,m=>`🏆 You won the week of ${m[1]}! New trophy on the shelf!`],
  [/^(\d+)º$/,m=>`#${m[1]}`],
+ [/^⭐ Pergunta dos pais: (.+)$/,m=>`⭐ Parents' question: ${m[1]}`],
  [/^Você ganhou \+(\d+) XP ⭐/,m=>`You earned +${m[1]} XP ⭐`],
  [/^Você acertou (\d) de 3! \+(\d+) XP ⭐$/,m=>`You got ${m[1]} of 3 right! +${m[2]} XP ⭐`],
  [/^Nível (\d+)$/,m=>`Level ${m[1]}`],
@@ -2378,13 +2408,16 @@ function voltarPT(){
     else { const r=origAttr.get(n); if(r){ ATTRS.forEach(a=>{ if(r[a] && n.getAttribute(a)===r[a].en) n.setAttribute(a,r[a].pt); }); origAttr.delete(n); } }
   }
 }
+let filaIdioma=[], agIdioma=false;
 const obsIdioma=new MutationObserver(ms=>{
   if(idiomaUI!=='en') return;
-  ms.forEach(m=>{
+  filaIdioma.push(...ms); if(agIdioma) return; agIdioma=true;
+  (window.requestAnimationFrame||setTimeout)(()=>{ agIdioma=false; const lote=filaIdioma; filaIdioma=[];
+  lote.forEach(m=>{
     if(m.type==='characterData') trTexto(m.target);
     else if(m.type==='attributes') trAttr(m.target);
-    else m.addedNodes.forEach(trArvore);
-  });
+    else m.addedNodes.forEach(n=>{ if(n.isConnected) trArvore(n); });
+  }); });
 });
 obsIdioma.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:ATTRS});
 // Caixas de aviso do navegador
