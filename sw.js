@@ -1,6 +1,6 @@
 // Leitura Divertida com a Lili: funciona sem internet.
 // Página: tenta a internet primeiro (para pegar versões novas) e usa a cópia guardada se estiver offline.
-const CACHE='lili-1.0';
+const CACHE='lili-1.1';
 const ARQUIVOS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./apple-touch-icon.png'];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ARQUIVOS)).then(()=>self.skipWaiting()));

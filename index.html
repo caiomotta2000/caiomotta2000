@@ -259,7 +259,7 @@
 <div class="app">
 
   <!-- LOGIN -->
-  <button id="versao-app" onclick="abrirVersoes()" style="position:fixed;right:10px;bottom:8px;font-size:.8rem;font-weight:700;opacity:.7;z-index:50;background:none;border:none;font-family:inherit;color:inherit;text-decoration:underline;cursor:pointer">Lili 1.0 · 13/10/2026</button>
+  <button id="versao-app" onclick="abrirVersoes()" style="position:fixed;right:10px;bottom:8px;font-size:.8rem;font-weight:700;opacity:.7;z-index:50;background:none;border:none;font-family:inherit;color:inherit;text-decoration:underline;cursor:pointer">Lili 1.1 · 15/10/2026</button>
   <div id="versoes-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;overflow:auto;padding:20px" onclick="if(event.target===this)this.style.display='none'">
     <div class="cartao" style="max-width:560px;margin:20px auto"><h2>🗒️ Histórico de versões</h2><div id="versoes-lista"></div>
     <button class="btn verde" onclick="document.getElementById('versoes-modal').style.display='none'">Fechar</button></div>
@@ -748,7 +748,7 @@ function montarPainel(){
   else if(pct>=100){ frase='UAU! Você bateu a meta do mês! Você é um super leitor! 🏆'; humor='uau'; }
   else if(seq>=3){ frase=`${seq} dias seguidos lendo! Não deixa o fogo apagar! 🔥`; humor='uau'; }
   else if(user.leituras.length && (!banco.ultimoBackup || (Date.now()-new Date(banco.ultimoBackup))/864e5>7)){ frase='Psiu! Faz tempo que você não salva seu histórico. Toque em 📜 Histórico! 💾'; humor='pensa'; }
-  else if(!feitoQuiz){ frase='Já fez o Quiz Diário? Tenho 3 perguntas pra você! 🧠'; humor='pensa'; }
+  else if(!user.leituras.some(l=>l.data===hojeISO())){ frase='Leu hoje? Registre o capítulo e responda o quiz da Lili! 🧠'; humor='pensa'; }
   else { frase=['Cada página é uma aventura nova!','Ler em inglês e português é um superpoder! 💪','Que tal ler mais um pouquinho hoje?'][new Date().getDate()%3]; }
   document.getElementById('balao-painel').textContent=frase;
   mascote('m-painel',humor);
@@ -1174,7 +1174,7 @@ function abrirLivro(idl){
     ${blocoTerminado(l)}
     <h2 style="margin-top:16px">✍️ Diário de respostas</h2>
     ${resps.length?resps.map(r=>`<div class="resp"><small>${r.data.split('-').reverse().join('/')}</small><b>${esc(r.p)}</b>${esc(r.r)}</div>`).join('')
-      :'<div class="vazio">Ainda não tem respostas. Faça o Quiz Diário sobre este livro! 🧠</div>'}
+      :'<div class="vazio">Ainda não tem respostas. Registre um capítulo e responda o quiz da Lili! 🧠</div>'}
     <button class="btn branco" id="b-pais">👨‍👩‍👦 Perguntas da história (pais) · ${nq}</button>`;
   document.getElementById('b-pais').onclick=()=>abrirPais(idl);
   ligarTerminado(l);
@@ -1204,7 +1204,7 @@ function abrirPais(idl){
   }
   const l=user.livros.find(x=>x.id===idl); l.perguntas=l.perguntas||[];
   cx.innerHTML=`<h2>📘 Perguntas sobre "${esc(l.titulo)}"</h2>
-    <p>Crie perguntas sobre a história com 3 opções. O quiz usa até 3 por dia; se faltar, a Lili completa com perguntas abertas de compreensão.</p>
+    <p>Crie perguntas sobre a história com 3 opções. Depois do quiz da IA, uma delas aparece como bônus de +10 XP.</p>
     <label for="np-p">Pergunta</label><input type="text" id="np-p" maxlength="120" placeholder="Ex.: Por que a raposa queria ser cativada?">
     <label for="np-a">Opção A</label><input type="text" id="np-a" maxlength="60">
     <label for="np-b">Opção B</label><input type="text" id="np-b" maxlength="60">
@@ -1393,7 +1393,7 @@ function montarPalavras(){
   ['w-palavra','w-significado'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('w-erro').textContent='';
   marcarIdioma(document.getElementById('w-idiomas'),langPalavra);
-  document.getElementById('balao-palavras').textContent = us.palavras.length>=3 ? 'Suas palavras aparecem como bônus no Quiz Diário! Que tal treinar com os cartões? 🃏' : 'Achou uma palavra nova no livro? Anota aqui pra não esquecer! ✏️';
+  document.getElementById('balao-palavras').textContent = us.palavras.length>=3 ? 'Que tal treinar suas palavras com os cartões? 🃏' : 'Achou uma palavra nova no livro? Anota aqui pra não esquecer! ✏️';
   mascote('m-palavras','feliz');
   flash=null; listarPalavras();
 }
@@ -1733,12 +1733,15 @@ function textoResumo(ini){
     const term=us.livros.filter(l=>l.terminadoEm && set.has(l.terminadoEm)).map(l=>`${l.titulo} (${'⭐'.repeat(l.estrelas||0)})`);
     const qz=Object.entries(us.quiz||{}).filter(([d])=>set.has(d)).map(([,q])=>q.acertos);
     const pal=(us.palavras||[]).filter(p=>set.has(p.criado)).map(p=>`${p.palavra} = ${p.significado}`);
+    const xpq=leit.reduce((s,l)=>s+(typeof l.xpQuiz==='number'?l.xpQuiz:0),0);
+    const cont=[]; leit.forEach(l=>(l.quiz||[]).forEach(x=>{ if(x.contestada) cont.push(`• ${fmtData(l.data)} ${tit(l.livro)}: ${x.p} (${iaNome(x.origem).replace(/^\S+ /,'')})`); }));
     const resp=(us.respostas||[]).filter(r=>set.has(r.data)).map(r=>`• ${fmtData(r.data)} ${tit(r.livro)}\n  ${r.p}\n  “${r.r}”`);
     partes.push(`\n===== ${us.avatar||''} ${nome} =====
 Páginas: ${pt+en} (português ${pt}, inglês ${en})
 Dias com leitura: ${diasLidos}/7
 Minutos no cronômetro: ${min}
-Quizzes: ${qz.length}${qz.length?` (estrelas: ${qz.join(', ')})`:''}
+XP dos quizzes da IA: ${xpq}
+Perguntas marcadas como erradas: ${cont.length?'\n'+cont.join('\n'):'nenhuma'}
 Livros terminados: ${term.length?term.join(', '):'nenhum'}
 Palavras novas: ${pal.length?pal.join('; '):'nenhuma'}
 Diário e respostas escritas:
@@ -1783,8 +1786,8 @@ function montarConfigPais(){
     <p>Toda semana vai um resumo de todas as crianças para <b>${RESUMO_EMAIL}</b>, com uma cópia do histórico anexada. Ele sai quando o app é aberto com internet a partir de domingo às 18h.</p>
     <p style="font-weight:700;color:var(--roxo)">${banco.resumoEmailUltimo?'Último envio: '+fmtData(banco.resumoEmailUltimo):'Nenhum resumo enviado ainda.'}</p>
     <button class="btn azul" id="cfg-enviar">📨 Enviar resumo desta semana agora</button>
-    <h2 style="margin-top:18px">🤖 IA reserva (opcional)</h2>
-    <p>O quiz usa uma IA gratuita. Se ela falhar, o app pode usar o Gemini com uma chave sua (fica só neste iPad).</p>
+    <h2 style="margin-top:18px">🤖 Chave do Gemini (opcional)</h2>
+    <p>Com uma chave sua, o Gemini cria e corrige o quiz (erra menos sobre livros reais). Sem chave ou se ele falhar, o app usa uma IA gratuita. A chave fica só neste iPad.</p>
     <input type="password" id="cfg-gemini" placeholder="Chave do Gemini (AIza...)" value="${esc(chaveGemini())}" autocomplete="off">
     <button class="btn branco" id="cfg-gemini-ok">Salvar chave 🔑</button>
     <h2 style="margin-top:18px">📲 App no iPad</h2>
@@ -1813,36 +1816,81 @@ montarResumo=function(){ const c=document.getElementById('pais-config'); if(c) c
 /* ============ QUIZ DA IA POR CAPÍTULO ============ */
 // Leituras novas (com xpQuiz) valem 10 XP por acerto; as antigas continuam valendo 1 XP por página.
 function xpLeituras(ls){ return (ls||[]).reduce((s,l)=>s+(typeof l.xpQuiz==='number'?l.xpQuiz:(l.paginas||0)),0); }
-async function gerarPerguntasIA(livro, reg){
+const IA_NOMES={gemini:'✨ Gemini 2.5 Flash', pollinations:'🤖 Pollinations', pais:'👨‍👩‍👦 Pergunta dos pais', auto:'📐 Nota automática'};
+const iaNome=k=>IA_NOMES[k]||'🤖 IA';
+const lerJSON=txt=>JSON.parse(txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1));
+function embaralhar(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+// XP da leitura: 10 por acerto (múltipla), nota 0–10 (aberta), +10 pergunta dos pais. Pergunta contestada não tira XP: vale 10.
+function recalcXP(reg){
+  const q=(reg.quiz||[]).reduce((s,x)=>s+(x.contestada?10:(x.nota!=null?x.nota:(x.acertou?10:0))),0);
+  const pais=reg.perguntaPais&&reg.perguntaPais.acertou?10:0;
+  reg.xpQuiz=q+pais; return {q,pais,total:q+pais};
+}
+async function gerarPerguntasIA(livro, reg, forcarAberta){
   const en=reg.idioma==='en';
-  const prompt=`Você é professora de leitura para uma criança de 9 anos. Livro: "${livro.titulo}"${livro.autor?` de ${livro.autor}`:''}. Trecho lido: ${reg.capitulo}. Resumo escrito pela criança: "${reg.resumo}".
-Se você CONHECE bem esse livro e esse capítulo, crie 3 perguntas de múltipla escolha sobre a história desse trecho (personagens, acontecimentos, por quê), cada uma com 4 opções curtas e só uma certa.
-Se NÃO conhece o livro com segurança, não invente: crie 3 perguntas abertas e descritivas, baseadas no resumo, para a criança responder com as próprias palavras (ex.: o que o personagem sentiu, por que algo aconteceu, o que ela acha que vem depois).
-Escreva em ${en?'inglês simples':'português'}. Responda SOMENTE com JSON, um destes formatos:
-{"tipo":"multipla","perguntas":[{"p":"pergunta","opcoes":["a","b","c","d"],"certa":0}]}
-{"tipo":"aberta","perguntas":[{"p":"pergunta"}]}`;
-  const txt=await chamarIA(prompt), j=JSON.parse(txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1));
-  if(j.tipo==='aberta'){ const ab=(j.perguntas||[]).filter(q=>q.p).slice(0,3); if(ab.length<3) throw new Error('ia formato'); ab.aberta=true; return ab; }
-  const qs=(j.perguntas||[]).filter(q=>q.p && Array.isArray(q.opcoes) && q.opcoes.length>=2 && q.opcoes[q.certa]!=null).slice(0,3);
-  if(qs.length<3) throw new Error('ia formato'); return qs;
+  const antes=u().leituras.filter(l=>l.livro===livro.id && l.id!==reg.id && l.resumo).sort((a,b)=>((a.salvoEm||a.data)>(b.salvoEm||b.data)?1:-1)).slice(-5)
+    .map(l=>`- ${l.capitulo||fmtData(l.data)}: ${l.resumo}`).join('\n');
+  const prompt=`Você é professora de leitura de uma criança de 9 anos. Livro: "${livro.titulo}"${livro.autor?` de ${livro.autor}`:''}.
+${antes?`Resumos que ela escreveu dos trechos anteriores (para entender até onde ela já leu):\n${antes}\n`:''}Trecho lido agora: ${reg.capitulo}. Resumo escrito pela criança: "${reg.resumo}".
+Primeiro avalie de 0 a 10 a sua "seguranca": o quanto você conhece de verdade ESTE livro e ESTE trecho.
+${forcarAberta?'Crie obrigatoriamente o formato "aberta".':`Se a seguranca for 7 ou mais, crie 3 perguntas de múltipla escolha. Se for menor que 7, NÃO invente fatos do livro: use o formato "aberta".`}
+Regras para as 3 perguntas:
+- Pergunta 1: o que aconteceu no trecho. Pergunta 2: por que algo aconteceu ou o que um personagem sentiu. Pergunta 3: o significado de uma palavra do trecho ou a opinião dela.
+- Só sobre ESTE trecho e o que veio antes; nunca sobre o que acontece depois.
+- Linguagem simples para 9 anos, sem pegadinha, sem perguntas repetidas.
+- Múltipla escolha: 4 opções curtas e plausíveis, só 1 certa, e "explicacao": uma frase curta dizendo por que a certa é a certa.
+- Aberta: perguntas descritivas baseadas no resumo, para responder com as próprias palavras.
+Escreva em ${en?'inglês simples':'português'}. Responda SOMENTE com JSON, num destes formatos:
+{"seguranca":8,"tipo":"multipla","perguntas":[{"p":"pergunta","opcoes":["a","b","c","d"],"certa":0,"explicacao":"..."}]}
+{"seguranca":4,"tipo":"aberta","perguntas":[{"p":"pergunta"}]}`;
+  const r=await chamarIA(prompt), j=lerJSON(r.txt), seg=Math.max(0,Math.min(10,Math.round(+j.seguranca||0)));
+  const meta={ia:r.ia, modelo:r.modelo, seguranca:seg, em:new Date().toISOString()};
+  const unicas=arr=>{ const vis=new Set(); return arr.filter(q=>{ const k=String(q.p).trim().toLowerCase(); if(vis.has(k)) return false; vis.add(k); return true; }); };
+  if(j.tipo==='aberta' || forcarAberta){ const ab=unicas((j.perguntas||[]).filter(q=>q.p)).slice(0,3).map(q=>({p:q.p})); if(ab.length<3) throw new Error('ia formato'); ab.aberta=true; ab.meta=meta; return ab; }
+  if(seg<6) return gerarPerguntasIA(livro, reg, true); // disse que não conhece o livro mas mandou múltipla: refaz como aberta
+  let qs=unicas((j.perguntas||[]).filter(q=>q.p && Array.isArray(q.opcoes) && q.opcoes.length>=2 && q.opcoes[q.certa]!=null)).slice(0,3);
+  if(qs.length<3) throw new Error('ia formato');
+  qs=qs.map(q=>{ const certa=q.opcoes[q.certa], op=embaralhar(q.opcoes); return {p:q.p, opcoes:op, certa:op.indexOf(certa), explicacao:q.explicacao||''}; });
+  qs.meta=meta; return qs;
+}
+function resultadoQuiz(reg, cx){
+  // Lista cada pergunta com o motivo do XP e o botão de contestar.
+  const box=document.getElementById('rq-detalhe'); if(!box) return;
+  const c=recalcXP(reg);
+  box.innerHTML=(reg.quiz||[]).map((x,i)=>`<div class="q-item" style="display:block;margin-top:8px"><b>${i+1}. ${esc(x.p)}</b><br>
+    ${x.nota!=null?`<span>Nota ${x.nota}/10</span>${x.motivo?` · <small>${esc(x.motivo)}</small>`:''}`:(x.acertou?'<span>✅ Acertou</span>':`<span>❌ A certa era: ${esc(x.certa)}</span>`)}
+    ${x.explicacao?`<br><small>💡 ${esc(x.explicacao)}</small>`:''}
+    <br>${x.contestada?'<small>⚠️ Marcada como errada: vale 10 XP</small>':`<button class="btn branco rq-contestar" data-i="${i}" style="margin-top:6px;font-size:.85rem;padding:6px 10px">⚠️ Essa pergunta está errada</button>`}</div>`).join('')
+    +`<div class="resp" style="margin-top:10px;background:#fff3c4"><b>Quiz ${c.q}${c.pais?` + pais ${c.pais}`:''} = ${c.total} XP ⭐</b></div>`;
+  box.querySelectorAll('.rq-contestar').forEach(b=>b.onclick=()=>{ if(!confirm('Marcar esta pergunta como errada? Ela vai valer 10 XP e os pais vão ver no histórico.')) return;
+    contestar(reg, +b.dataset.i); resultadoQuiz(reg, cx); });
+}
+function contestar(reg, i){
+  const x=(reg.quiz||[])[i]; if(!x||x.contestada) return; x.contestada=true; x.contestadaEm=new Date().toISOString();
+  recalcXP(reg); salvar(); rkSync=0; rkSincronizar&&rkSincronizar(); toast('Obrigada por avisar! ⚠️');
 }
 async function quizIA(reg){
   const cx=document.getElementById('r-quiz'), livro=u().livros.find(l=>l.id===reg.livro)||{titulo:''}, balao=document.getElementById('balao-registrar');
   cx.style.display='block'; cx.innerHTML='<h2>🧠 Quiz do capítulo</h2><p>A Lili está preparando 3 perguntas sobre o que você leu... ⏳</p>';
   balao.textContent='Leitura salva! Agora vamos ver o que você entendeu! 🧠'; mascote('m-registrar','pensa'); cx.scrollIntoView({behavior:'smooth'});
-  let qs; try{ qs=await gerarPerguntasIA(livro, reg); }catch(e){ reg.iaErros=(reg.iaErros||0)+1; salvar();
+  let qs; try{ qs=await gerarPerguntasIA(livro, reg); }catch(e){ reg.iaErros=(reg.iaErros||0)+1; (reg.iaFalhas=reg.iaFalhas||[]).push({em:new Date().toISOString(), erro:String(e&&e.message||e).slice(0,80)}); salvar();
     cx.innerHTML='<h2>🧠 Quiz do capítulo</h2><p>A Lili não conseguiu criar o quiz agora (precisa de internet). Sua leitura ficou salva, mas sem XP do quiz.</p><button class="btn azul" id="rq-tentar">🔄 Tentar de novo</button><button class="btn branco" id="rq-sair">⬅ Voltar ao painel</button>';
     document.getElementById('rq-tentar').onclick=()=>quizIA(reg); document.getElementById('rq-sair').onclick=()=>{ cx.style.display='none'; ir('painel'); }; return; }
+  reg.iaGerou=qs.meta;
   if(qs.aberta) return quizAberto(reg, qs, livro);
   const resp=[];
-  cx.innerHTML='<h2>🧠 Quiz do capítulo</h2><p>Cada acerto vale 10 XP!</p>'+qs.map((q,i)=>`<div class="q-bloco" style="margin-top:12px"><b>${i+1}. ${esc(q.p)}</b>${q.opcoes.map((o,k)=>`<button class="btn branco rq-op" data-q="${i}" data-k="${k}" style="margin-top:6px;text-align:left">${esc(o)}</button>`).join('')}</div>`).join('')+'<div id="rq-fim"></div>';
+  cx.innerHTML='<h2>🧠 Quiz do capítulo</h2><p>Cada acerto vale 10 XP!</p>'+qs.map((q,i)=>`<div class="q-bloco" style="margin-top:12px"><b>${i+1}. ${esc(q.p)}</b>${q.opcoes.map((o,k)=>`<button class="btn branco rq-op" data-q="${i}" data-k="${k}" style="margin-top:6px;text-align:left">${esc(o)}</button>`).join('')}<div class="rq-exp" id="rq-exp${i}"></div></div>`).join('')+'<div id="rq-fim"></div>';
   cx.querySelectorAll('.rq-op').forEach(b=>b.onclick=()=>{
     const i=+b.dataset.q, k=+b.dataset.k; if(resp[i]!=null) return; resp[i]=k;
     cx.querySelectorAll(`.rq-op[data-q="${i}"]`).forEach(x=>{ const kk=+x.dataset.k; x.disabled=true;
       if(kk===qs[i].certa){ x.style.background='#b8f2c2'; x.textContent='✅ '+x.textContent; } else if(kk===k){ x.style.background='#ffc2c2'; x.textContent='❌ '+x.textContent; } });
+    if(qs[i].explicacao) document.getElementById('rq-exp'+i).innerHTML=`<small>💡 ${esc(qs[i].explicacao)}</small>`;
     if(resp.filter(v=>v!=null).length===3){
-      const ac=qs.filter((q,j)=>resp[j]===q.certa).length; reg.xpQuiz=ac*10; reg.quizTipo='multipla'; reg.quiz=qs.map((q,j)=>({p:q.p,opcoes:q.opcoes,certa:q.opcoes[q.certa],resp:q.opcoes[resp[j]],acertou:resp[j]===q.certa})); reg.quizEm=new Date().toISOString(); salvar();
-      document.getElementById('rq-fim').innerHTML=`<div class="resp" style="margin-top:14px;background:#fff3c4"><b>Você acertou ${ac} de 3! +${ac*10} XP ⭐</b></div><button class="btn verde" id="rq-ok">Voltar ao painel 🏠</button>`;
+      const ac=qs.filter((q,j)=>resp[j]===q.certa).length; reg.quizTipo='multipla';
+      reg.quiz=qs.map((q,j)=>({p:q.p,opcoes:q.opcoes,certa:q.opcoes[q.certa],resp:q.opcoes[resp[j]],acertou:resp[j]===q.certa,explicacao:q.explicacao,origem:qs.meta.ia}));
+      reg.quizEm=new Date().toISOString(); recalcXP(reg); salvar();
+      document.getElementById('rq-fim').innerHTML=`<div class="resp" style="margin-top:14px;background:#fff3c4"><b>Você acertou ${ac} de 3! +${ac*10} XP ⭐</b></div><div id="rq-detalhe"></div><button class="btn verde" id="rq-ok">Voltar ao painel 🏠</button>`;
+      resultadoQuiz(reg, cx);
       document.getElementById('rq-ok').onclick=()=>{ cx.style.display='none'; ir('painel'); }; blocoPais(reg, livro);
       balao.textContent= ac===3?'Uau! Acertou tudo! Você entendeu muito bem! 🏆': ac?'Muito bem! Continue lendo com atenção! 🌟':'Tudo bem! Na próxima, leia com calma e tente de novo! 💪';
       mascote('m-registrar',ac?'uau':'pensa',true); if(ac) confete(); rkSync=0; rkSincronizar&&rkSincronizar();
@@ -1853,9 +1901,16 @@ async function quizIA(reg){
 async function avaliarIA(livro, reg, qs, rs){
   const prompt=`Você é uma professora gentil avaliando uma criança de 9 anos. Livro: "${livro.titulo}", ${reg.capitulo}. Resumo dela: "${reg.resumo}".
 ${qs.map((q,i)=>`Pergunta ${i+1}: ${q.p}\nResposta: ${rs[i]}`).join('\n')}
-Dê uma nota de 0 a 10 para cada resposta, valorizando esforço, coerência com a história e frases completas (resposta vazia ou sem sentido = 0). Responda SOMENTE JSON: {"notas":[n,n,n],"comentario":"uma frase curta e carinhosa em ${reg.idioma==='en'?'inglês':'português'}"}`;
-  const txt=await chamarIA(prompt), j=JSON.parse(txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1));
-  return {notas:(j.notas||[]).slice(0,3).map(n=>Math.max(0,Math.min(10,Math.round(+n||0)))), comentario:j.comentario||''};
+Avalie cada resposta com esta régua fixa:
+- "historia" de 0 a 4: combina com a história e com o resumo;
+- "pergunta" de 0 a 3: responde o que foi perguntado;
+- "frase" de 0 a 3: frase completa, com algum detalhe ou motivo.
+Resposta vazia ou sem sentido = 0 em tudo. Para cada resposta escreva "motivo": uma frase curta e carinhosa dizendo o que foi bom e o que faltou.
+Escreva os textos em ${reg.idioma==='en'?'inglês':'português'}. Responda SOMENTE JSON:
+{"avaliacoes":[{"historia":4,"pergunta":3,"frase":2,"motivo":"..."}],"comentario":"uma frase curta e carinhosa"}`;
+  const r=await chamarIA(prompt), j=lerJSON(r.txt), lim=(n,m)=>Math.max(0,Math.min(m,Math.round(+n||0)));
+  const av=(j.avaliacoes||[]).slice(0,3).map(a=>{ const h=lim(a.historia,4), p=lim(a.pergunta,3), f=lim(a.frase,3); return {nota:h+p+f, regua:{historia:h,pergunta:p,frase:f}, motivo:a.motivo||''}; });
+  return {av, comentario:j.comentario||'', ia:r.ia, modelo:r.modelo};
 }
 function quizAberto(reg, qs, livro){
   const cx=document.getElementById('r-quiz'), balao=document.getElementById('balao-registrar');
@@ -1864,10 +1919,16 @@ function quizAberto(reg, qs, livro){
     const rs=qs.map((q,i)=>document.getElementById('rq-a'+i).value.trim());
     if(rs.some(r=>r.split(/\s+/).filter(Boolean).length<3)){ document.getElementById('rq-erro').textContent='Responda cada pergunta com pelo menos 3 palavras ✍️'; return; }
     const bt=document.getElementById('rq-enviar'); bt.disabled=true; bt.textContent='A Lili está lendo suas respostas... ⏳';
-    let av; try{ av=await avaliarIA(livro, reg, qs, rs); if(av.notas.length<3) throw 0; }catch(e){ av={notas:rs.map(r=>r.split(/\s+/).length>=8?7:5), comentario:''}; }
-    const xp=av.notas.reduce((a,b)=>a+b,0); reg.xpQuiz=xp; reg.quizTipo='aberta'; reg.quiz=qs.map((q,i)=>({p:q.p,resp:rs[i],nota:av.notas[i]})); reg.comentarioIA=av.comentario; reg.quizEm=new Date().toISOString(); salvar();
+    let res; try{ res=await avaliarIA(livro, reg, qs, rs); if(res.av.length<3) throw new Error('ia formato'); reg.iaCorrigiu={ia:res.ia, modelo:res.modelo, em:new Date().toISOString()}; }
+    catch(e){ const n=r=>r.split(/\s+/).filter(Boolean).length;
+      res={av:rs.map(r=>({nota:n(r)>=8?7:5, motivo:`Nota automática: a IA não conseguiu corrigir agora. Resposta com ${n(r)} palavras (8 ou mais = 7, menos = 5).`})), comentario:''};
+      reg.iaCorrigiu={ia:'auto', em:new Date().toISOString(), erro:String(e&&e.message||e).slice(0,80)}; }
+    reg.quizTipo='aberta';
+    reg.quiz=qs.map((q,i)=>({p:q.p,resp:rs[i],nota:res.av[i].nota,regua:res.av[i].regua,motivo:res.av[i].motivo,origem:qs.meta.ia}));
+    reg.comentarioIA=res.comentario; reg.quizEm=new Date().toISOString(); const xp=recalcXP(reg).total; salvar();
     bt.style.display='none';
-    document.getElementById('rq-fim').innerHTML=`<div class="resp" style="margin-top:14px;background:#fff3c4"><b>Você ganhou +${xp} XP ⭐</b>${esc(av.comentario)}</div><button class="btn verde" id="rq-ok">Voltar ao painel 🏠</button>`;
+    document.getElementById('rq-fim').innerHTML=`<div class="resp" style="margin-top:14px;background:#fff3c4"><b>Você ganhou +${xp} XP ⭐</b>${esc(res.comentario)}</div><div id="rq-detalhe"></div><button class="btn verde" id="rq-ok">Voltar ao painel 🏠</button>`;
+    resultadoQuiz(reg, cx);
     document.getElementById('rq-ok').onclick=()=>{ cx.style.display='none'; ir('painel'); }; blocoPais(reg, livro);
     balao.textContent= xp>=24?'Que respostas incríveis! 🏆':'Muito bem! Continue lendo com atenção! 🌟'; mascote('m-registrar','uau',true); confete(); rkSync=0; rkSincronizar();
   };
@@ -1880,19 +1941,34 @@ function montarLog(){
   const hora=iso=>{ const d=new Date(iso); return `${fmtData(hojeISO(d))} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
   cx.innerHTML='<h2>📒 Log das leituras</h2>'+(ls.length?ls.map(l=>{
     const lv=u().livros.find(b=>b.id===l.livro)||{titulo:'?'};
-    const xp=typeof l.xpQuiz==='number'?`${l.xpQuiz} XP`:`${l.paginas} XP`;
-    const q=(l.quiz||[]).map((x,i)=>`<div style="margin-top:6px"><b>${i+1}. ${esc(x.p)}</b>${x.opcoes?`<br><small>Opções: ${x.opcoes.map(esc).join(' · ')}</small>`:''}<br>Resposta: ${esc(x.resp||'')}${x.certa!=null?` ${x.acertou?'✅':'❌'}<br><small>Certa: ${esc(x.certa)}</small>`:''}${x.nota!=null?` <small>(nota ${x.nota}/10)</small>`:''}</div>`).join('');
+    const temQuiz=typeof l.xpQuiz==='number';
+    const qx=(l.quiz||[]).reduce((s,x)=>s+(x.contestada?10:(x.nota!=null?x.nota:(x.acertou?10:0))),0), px=l.perguntaPais&&l.perguntaPais.acertou?10:0;
+    const xp=temQuiz?`${l.xpQuiz} XP`:`${l.paginas} XP`;
+    const conta=temQuiz?(l.quiz&&l.quiz.length?`Quiz ${qx}${l.perguntaPais?` + pais ${px}`:''} = ${qx+px} XP`:`${l.xpQuiz} XP (quiz não respondido)`):`${l.paginas} XP (1 XP por página, leitura antiga)`;
+    const ger=l.iaGerou, cor=l.iaCorrigiu;
+    const origem=ger?`Perguntas: ${iaNome(ger.ia)}${ger.modelo?` (${esc(ger.modelo)})`:''} · ${hora(ger.em)} · segurança sobre o livro ${ger.seguranca}/10`:(l.quiz&&l.quiz.length?'Perguntas: 🤖 IA (origem não registrada, versão antiga)':'');
+    const corr=l.quizTipo==='aberta'?(cor?`Correção: ${iaNome(cor.ia)}${cor.modelo?` (${esc(cor.modelo)})`:''} · ${hora(cor.em)}`:'Correção: origem não registrada (versão antiga)'):'';
+    const q=(l.quiz||[]).map((x,i)=>`<div style="margin-top:6px"><b>${i+1}. ${esc(x.p)}</b> <small>${iaNome(x.origem||(ger&&ger.ia))}</small>${x.opcoes?`<br><small>Opções: ${x.opcoes.map(esc).join(' · ')}</small>`:''}<br>Resposta: ${esc(x.resp||'')}${x.certa!=null?` ${x.acertou?'✅':'❌'}<br><small>Certa: ${esc(x.certa)}</small>`:''}${x.nota!=null?` <small>(nota ${x.nota}/10${x.regua?`: história ${x.regua.historia}/4, pergunta ${x.regua.pergunta}/3, frase ${x.regua.frase}/3`:''})</small>`:''}${x.explicacao?`<br><small>💡 ${esc(x.explicacao)}</small>`:''}${x.motivo?`<br><small>📝 ${esc(x.motivo)}</small>`:''}${x.contestada?`<br><small>⚠️ Marcada como errada em ${hora(x.contestadaEm)} (vale 10 XP)</small>`:`<br><button class="btn branco log-contestar" data-id="${l.id}" data-i="${i}" style="margin-top:4px;font-size:.8rem;padding:4px 8px">⚠️ Pergunta errada</button>`}</div>`).join('');
+    const falhas=(l.iaFalhas||[]).map(f=>`${hora(f.em)}${f.erro?` (${esc(f.erro)})`:''}`).join('; ');
     return `<details class="q-item" style="display:block"><summary><b>${fmtData(l.data)}</b> · ${esc(lv.titulo)}${l.capitulo?` · ${esc(l.capitulo)}`:''} · ${xp}</summary>
       <div style="margin-top:6px"><small>Salvo em: ${l.salvoEm?hora(l.salvoEm):fmtData(l.data)}</small><br>Páginas: ${l.paginas}${l.minutos?` · Minutos: ${l.minutos}`:''} · Idioma: ${l.idioma==='en'?'🇺🇸':'🇧🇷'}</div>
+      <div style="margin-top:6px"><b>XP:</b> ${conta}</div>
       ${l.resumo?`<div style="margin-top:6px"><b>Resumo:</b> ${esc(l.resumo)}</div>`:''}
-      ${q?`<div style="margin-top:6px"><b>Quiz da IA (${l.quizTipo==='aberta'?'perguntas abertas':'múltipla escolha'})</b>${q}</div>`:(l.resumo?`<div style="margin-top:6px"><small>Quiz da IA ainda não respondido${l.iaErros?` (falhas da IA: ${l.iaErros})`:''}.</small></div>`:'')}
-      ${l.perguntaPais?`<div style="margin-top:6px"><b>Pergunta dos pais:</b> ${esc(l.perguntaPais.p)}<br>Resposta: ${esc(l.perguntaPais.resp)} ${l.perguntaPais.acertou?'✅':'❌'} <small>Certa: ${esc(l.perguntaPais.certa)}</small></div>`:''}
+      ${q?`<div style="margin-top:6px"><b>Quiz da IA (${l.quizTipo==='aberta'?'perguntas abertas':'múltipla escolha'})</b><br><small>${origem}${corr?`<br>${corr}`:''}</small>${q}</div>`:(l.resumo?`<div style="margin-top:6px"><small>Quiz da IA ainda não respondido${l.iaErros?` (falhas da IA: ${l.iaErros})`:''}.</small></div>`:'')}
+      ${falhas?`<div style="margin-top:6px"><small>Falhas da IA: ${falhas}</small></div>`:''}
+      ${l.perguntaPais?`<div style="margin-top:6px"><b>Pergunta dos pais:</b> ${esc(l.perguntaPais.p)} <small>${iaNome('pais')}</small><br>Resposta: ${esc(l.perguntaPais.resp)} ${l.perguntaPais.acertou?'✅ +10 XP':'❌ 0 XP'} <small>Certa: ${esc(l.perguntaPais.certa)}</small></div>`:''}
       ${l.comentarioIA?`<div style="margin-top:6px"><b>Comentário da IA:</b> ${esc(l.comentarioIA)}</div>`:''}
     </details>`;}).join(''):'<p>Nenhuma leitura registrada ainda.</p>');
+  cx.querySelectorAll('.log-contestar').forEach(b=>b.onclick=e=>{ e.preventDefault();
+    const reg=u().leituras.find(l=>String(l.id)===b.dataset.id); if(!reg) return;
+    if(!confirm('Marcar esta pergunta como errada? Ela vai valer 10 XP.')) return;
+    const aberto=b.closest('details'); contestar(reg, +b.dataset.i); montarLog();
+    const ds=cx.querySelectorAll('details'); const idx=[...u().leituras].sort((a,c)=>((c.salvoEm||c.data)>(a.salvoEm||a.data)?1:-1)).indexOf(reg); if(ds[idx]) ds[idx].open=true; });
 }
 
 /* ============ HISTÓRICO DE VERSÕES ============ */
 const VERSOES=[
+ ['1.1','15/10/2026','🧠 Quiz da IA melhor: perguntas que seguem a história, explicação da resposta certa, nota com motivo, botão ⚠️ para pergunta errada e o histórico mostra qual IA criou e corrigiu cada pergunta.'],
  ['1.0','13/10/2026','🚀 Lançamento! Um só quiz (o da IA, com a pergunta dos pais como bônus), o resumo substitui o Diário do dia, IA reserva opcional (Gemini) e app mais leve no modo inglês.'],
  ['beta 12','13/10/2026','📒 Log das leituras no Histórico (resumo, perguntas, respostas e comentário da IA) e este histórico de versões.'],
  ['beta 11','13/10/2026','Registro com capítulo e resumo; a IA cria 3 perguntas e o XP vem dos acertos (ou de perguntas abertas). Número da versão na tela.'],
@@ -1912,16 +1988,22 @@ function abrirVersoes(){
 /* ============ 1.0: IA com reserva Gemini + pergunta dos pais ============ */
 const chaveGemini=()=>{ try{ return localStorage.getItem('leituraDivertida_gemini')||''; }catch(e){ return ''; } };
 async function chamarIA(prompt){
-  try{
-    const r=await fetch('https://text.pollinations.ai/openai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'openai',messages:[{role:'user',content:prompt}]})});
-    if(!r.ok) throw new Error('ia '+r.status);
-    const t=(await r.json()).choices[0].message.content; if(!t||t.indexOf('{')<0) throw new Error('ia vazia'); return t;
-  }catch(e){
-    const k=chaveGemini(); if(!k) throw e;
+  // 1.1: Gemini primeiro quando há chave (erra menos sobre livros reais); Pollinations grátis como reserva. Devolve {txt, ia, modelo}.
+  const gemini=async k=>{
     const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(k),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
     if(!r.ok) throw new Error('gemini '+r.status);
-    return (await r.json()).candidates[0].content.parts.map(p=>p.text||'').join('');
-  }
+    const t=(await r.json()).candidates[0].content.parts.map(p=>p.text||'').join(''); if(!t||t.indexOf('{')<0) throw new Error('gemini vazia');
+    return {txt:t, ia:'gemini', modelo:'gemini-2.5-flash'};
+  };
+  const pollinations=async()=>{
+    const r=await fetch('https://text.pollinations.ai/openai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'openai',messages:[{role:'user',content:prompt}]})});
+    if(!r.ok) throw new Error('pollinations '+r.status);
+    const j=await r.json(), t=j.choices[0].message.content; if(!t||t.indexOf('{')<0) throw new Error('pollinations vazia');
+    return {txt:t, ia:'pollinations', modelo:j.model||'openai'};
+  };
+  const k=chaveGemini();
+  if(k){ try{ return await gemini(k); }catch(e){ return await pollinations(); } }
+  return await pollinations();
 }
 function blocoPais(reg, livro){
   const ps=(livro&&livro.perguntas)||[]; if(!ps.length) return;
@@ -1932,7 +2014,7 @@ function blocoPais(reg, livro){
   box.querySelectorAll('.rq-pais').forEach(b=>b.onclick=()=>{
     if(reg.perguntaPais) return; const k=+b.dataset.k, ok=k===q.c;
     box.querySelectorAll('.rq-pais').forEach(x=>{ x.disabled=true; if(+x.dataset.k===q.c){ x.style.background='#b8f2c2'; x.textContent='✅ '+x.textContent; } else if(+x.dataset.k===k){ x.style.background='#ffc2c2'; x.textContent='❌ '+x.textContent; } });
-    reg.perguntaPais={p:q.p, opcoes:q.o, certa:q.o[q.c], resp:q.o[k], acertou:ok}; if(ok){ reg.xpQuiz+=10; confete(); toast('+10 XP ⭐'); } salvar(); rkSync=0; rkSincronizar();
+    reg.perguntaPais={p:q.p, opcoes:q.o, certa:q.o[q.c], resp:q.o[k], acertou:ok}; recalcXP(reg); resultadoQuiz(reg); if(ok){ confete(); toast('+10 XP ⭐'); } salvar(); rkSync=0; rkSincronizar();
   });
 }
 
@@ -2168,7 +2250,7 @@ const EN={
 'Vamos começar colocando seu primeiro livro na estante! 📚':"Let's start by putting your first book on the shelf! 📚",
 'UAU! Você bateu a meta do mês! Você é um super leitor! 🏆':'WOW! You reached your goal for the month! You are a super reader! 🏆',
 'Psiu! Faz tempo que você não salva seu histórico. Toque em 📜 Histórico! 💾':"Psst! You haven't saved your history in a while. Tap 📜 History! 💾",
-'Já fez o Quiz Diário? Tenho 3 perguntas pra você! 🧠':'Did you do the Daily Quiz yet? I have 3 questions for you! 🧠',
+'Leu hoje? Registre o capítulo e responda o quiz da Lili! 🧠':'Did you read today? Log the chapter and answer Lili\'s quiz! 🧠',
 'Cada página é uma aventura nova!':'Every page is a new adventure!','Ler em inglês e português é um superpoder! 💪':'Reading in English and Portuguese is a superpower! 💪',
 'Que tal ler mais um pouquinho hoje?':'How about reading a little more today?','Sua estante está vazia. Adicione um livro! 🙂':'Your shelf is empty. Add a book! 🙂',
 'Quantas páginas você quer ler este mês? 🎯':'How many pages do you want to read this month? 🎯','Nenhum livro ainda':'No books yet',
@@ -2209,11 +2291,11 @@ const EN={
 'Você ainda não salvou nenhum arquivo de histórico.':"You haven't saved a history file yet.",'Apagar esta leitura do histórico?':'Delete this reading from the history?',
 'Leitura apagada':'Reading deleted','Histórico salvo em arquivo! 💾':'History saved to a file! 💾','Histórico restaurado! ✅':'History restored! ✅',
 'Esse arquivo não é um histórico da Lili 🙈':"That file isn't a Lili history 🙈",'✍️ Diário de respostas':'✍️ Answer journal',
-'Ainda não tem respostas. Faça o Quiz Diário sobre este livro! 🧠':'No answers yet. Do the Daily Quiz about this book! 🧠',
+'Ainda não tem respostas. Registre um capítulo e responda o quiz da Lili! 🧠':'No answers yet. Log a chapter and answer Lili\'s quiz! 🧠',
 '👨‍👩‍👦 Área dos pais':"👨‍👩‍👦 Parents' area",'Crie uma senha dos pais (4 números), diferente da senha da criança.':"Create a parents' password (4 numbers), different from the child's password.",
 'Digite a senha dos pais.':"Enter the parents' password.",'Criar senha':'Create password','Entrar':'Log in','Use 4 números.':'Use 4 numbers.',
 'Use uma senha diferente da criança.':"Use a password different from the child's.",'Senha incorreta.':'Wrong password.',
-'Crie perguntas sobre a história com 3 opções. O quiz usa até 3 por dia; se faltar, a Lili completa com perguntas abertas de compreensão.':'Create questions about the story with 3 options. The quiz uses up to 3 a day; if there are fewer, Lili adds open comprehension questions.',
+'Crie perguntas sobre a história com 3 opções. Depois do quiz da IA, uma delas aparece como bônus de +10 XP.':'Create questions about the story with 3 options. After the AI quiz, one of them shows up as a +10 XP bonus.',
 'Pergunta':'Question','Ex.: Por que a raposa queria ser cativada?':'E.g. Why did the fox want to be tamed?','Opção A':'Option A','Opção B':'Option B','Opção C':'Option C',
 'Qual é a certa?':'Which one is right?','Salvar pergunta ➕':'Save question ➕','Nenhuma pergunta ainda.':'No questions yet.','Preencha a pergunta e as 3 opções.':'Fill in the question and the 3 options.',
 'Pergunta salva! ✅':'Question saved! ✅','Leitor Curioso':'Curious Reader','Explorador de Livros':'Book Explorer','Sábio das Páginas':'Page Sage','Herói da Leitura':'Reading Hero','Lenda da Leitura':'Reading Legend',
@@ -2226,7 +2308,7 @@ const EN={
 'Nenhum livro em leitura':'No book being read','Escolha o livro e o tempo. Quando der o sinal, eu comemoro com você! ⏱️':"Choose the book and the time. When the bell rings, I'll celebrate with you! ⏱️",
 'Pausado. Respira e volta quando quiser! 😊':'Paused. Take a breath and come back whenever you want! 😊','Shhh... hora de ler! Eu fico de olho no tempo. 🤫📖':"Shhh... time to read! I'll keep an eye on the time. 🤫📖",
 'Leia um pouquinho mais antes de terminar 😉':'Read a little more before you finish 😉','⏸️ Pausar':'⏸️ Pause','▶️ Continuar':'▶️ Continue','— nenhum —':'— none —',
-'Suas palavras aparecem como bônus no Quiz Diário! Que tal treinar com os cartões? 🃏':'Your words show up as a bonus in the Daily Quiz! How about practicing with the cards? 🃏',
+'Que tal treinar suas palavras com os cartões? 🃏':'How about practicing your words with the cards? 🃏',
 'Achou uma palavra nova no livro? Anota aqui pra não esquecer! ✏️':"Found a new word in the book? Write it here so you don't forget! ✏️",'🃏 Treinar com cartões':'🃏 Practice with cards',
 'Nenhuma palavra ainda.':'No words yet.','🃏 Treino concluído!':'🃏 Practice done!','Voltar ao caderno':'Back to the notebook','Sabia todas! Que memória! 🧠✨':'You knew them all! What a memory! 🧠✨',
 'Treinar sempre ajuda a lembrar! 💜':'Practice always helps you remember! 💜','Toque para virar':'Tap to flip','😄 Sabia!':'😄 I knew it!','🤔 Ainda não':'🤔 Not yet','Parar treino':'Stop practice',
@@ -2278,10 +2360,12 @@ const EN={
 'A Lili não conseguiu criar o quiz agora (precisa de internet). Sua leitura ficou salva, mas sem XP do quiz.':"Lili couldn't create the quiz now (it needs internet). Your reading was saved, but without quiz XP.",
 'Responda com suas palavras. Cada resposta vale até 10 XP!':'Answer in your own words. Each answer is worth up to 10 XP!','Enviar respostas ✅':'Send answers ✅','Responda cada pergunta com pelo menos 3 palavras ✍️':'Answer each question with at least 3 words ✍️','A Lili está lendo suas respostas... ⏳':'Lili is reading your answers... ⏳','Que respostas incríveis! 🏆':'What amazing answers! 🏆',
 '📒 Log das leituras':'📒 Reading log','Nenhuma leitura registrada ainda.':'No readings yet.','Resumo:':'Summary:','Comentário da IA:':'AI comment:',
-'🗒️ Histórico de versões':'🗒️ Version history','Fechar':'Close','🤖 IA reserva (opcional)':'🤖 Backup AI (optional)','Salvar chave 🔑':'Save key 🔑','Chave salva! 🔑':'Key saved! 🔑','Chave removida':'Key removed','O quiz usa uma IA gratuita. Se ela falhar, o app pode usar o Gemini com uma chave sua (fica só neste iPad).':'The quiz uses a free AI. If it fails, the app can use Gemini with your own key (stored only on this iPad).',
+'🗒️ Histórico de versões':'🗒️ Version history','Fechar':'Close','🤖 Chave do Gemini (opcional)':'🤖 Gemini key (optional)','Salvar chave 🔑':'Save key 🔑','Chave salva! 🔑':'Key saved! 🔑','Chave removida':'Key removed','Com uma chave sua, o Gemini cria e corrige o quiz (erra menos sobre livros reais). Sem chave ou se ele falhar, o app usa uma IA gratuita. A chave fica só neste iPad.':'With your own key, Gemini creates and grades the quiz (it makes fewer mistakes about real books). Without a key, or if it fails, the app uses a free AI. The key stays only on this iPad.',
 '🔄 Tentar de novo':'🔄 Try again','⬅ Voltar ao painel':'⬅ Back to dashboard','Cada acerto vale 10 XP!':'Each right answer is worth 10 XP!','Voltar ao painel 🏠':'Back to dashboard 🏠',
 'Uau! Acertou tudo! Você entendeu muito bem! 🏆':'Wow! All correct! You understood it really well! 🏆','Muito bem! Continue lendo com atenção! 🌟':'Well done! Keep reading carefully! 🌟',
 'Tudo bem! Na próxima, leia com calma e tente de novo! 💪':"That's OK! Next time, read calmly and try again! 💪",
+'⚠️ Essa pergunta está errada':'⚠️ This question is wrong','⚠️ Marcada como errada: vale 10 XP':'⚠️ Marked as wrong: worth 10 XP','✅ Acertou':'✅ Correct','Obrigada por avisar! ⚠️':'Thanks for telling me! ⚠️',
+'Marcar esta pergunta como errada? Ela vai valer 10 XP e os pais vão ver no histórico.':'Mark this question as wrong? It will be worth 10 XP and your parents will see it in the history.','Marcar esta pergunta como errada? Ela vai valer 10 XP.':'Mark this question as wrong? It will be worth 10 XP.','⚠️ Pergunta errada':'⚠️ Wrong question',
 'Nível':'Level','XP':'XP','Criança':'Child','Conquistada!':'Earned!','nenhum':'none','Legalzinho!':'Pretty good!','Legalzinho! 🙂':'Pretty good! 🙂'
 };
 const MES_EN={Janeiro:'January',Fevereiro:'February','Março':'March',Abril:'April',Maio:'May',Junho:'June',Julho:'July',Agosto:'August',Setembro:'September',Outubro:'October',Novembro:'November',Dezembro:'December'};
@@ -2290,6 +2374,10 @@ const trEN=s=>EN[s]||s;
 const premioEN=s=>PREMIO_EN[s]||s;
 const livroEN=s=>s==='seu livro'?'your book':s;
 const PADROES=[
+ [/^Nota (\d+)\/10$/,m=>`Score ${m[1]}/10`],
+ [/^❌ A certa era: (.+)$/,m=>`❌ The right answer was: ${m[1]}`],
+ [/^Quiz (\d+) \+ pais (\d+) = (\d+) XP ⭐$/,m=>`Quiz ${m[1]} + parents ${m[2]} = ${m[3]} XP ⭐`],
+ [/^Quiz (\d+) = (\d+) XP ⭐$/,m=>`Quiz ${m[1]} = ${m[2]} XP ⭐`],
  [/^Meu (\S+) 📅$/,m=>`My ${MES_EN[m[1]]||m[1]} 📅`],
  [/^Você tem (\d+) troféus? 🏆$/,m=>`You have ${m[1]} ${m[1]==='1'?'trophy':'trophies'} 🏆`],
  [/^Turma (.+)$/,m=>`Group ${m[1]}`],
