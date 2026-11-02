@@ -1,0 +1,17 @@
+{
+  "name": "Mesada da Lili",
+  "short_name": "Mesada",
+  "description": "App de mesada da família com a coruja Lili / Family allowance app with Lili the owl",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fff7e6",
+  "theme_color": "#7c4dff",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
