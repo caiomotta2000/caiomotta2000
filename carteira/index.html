@@ -986,6 +986,9 @@ tr.is-highlight > :last-child { box-shadow: 12px 0 var(--fill-tertiary); }
           </figure>
           <div class="x-controls">
             <input class="x-field" id="busca" type="search" placeholder="Buscar ativo, classe, tipo ou corretora" aria-label="Buscar posição" />
+            <select class="x-field" id="f-pos-ativo" aria-label="Filtrar por ativo"></select>
+            <select class="x-field" id="f-pos-obj" aria-label="Filtrar por objetivo"></select>
+            <select class="x-field" id="f-pos-classe" aria-label="Filtrar por classe"></select>
             <div class="links" role="group" aria-label="Ordenar por">
               <button class="btn x-sort" type="button" data-sort="valor" aria-pressed="true">Valor</button>
               <button class="btn x-sort" type="button" data-sort="peso" aria-pressed="false">Peso</button>
@@ -1002,6 +1005,7 @@ tr.is-highlight > :last-child { box-shadow: 12px 0 var(--fill-tertiary); }
                   <th scope="col">Peso</th>
                   <th scope="col">Lucro</th>
                   <th scope="col">Lucro %</th>
+                  <th scope="col">Objetivo</th>
                   <th scope="col">Corretora</th>
                 </tr>
               </thead>
@@ -2182,14 +2186,17 @@ tr.is-highlight > :last-child { box-shadow: 12px 0 var(--fill-tertiary); }
             '<td data-label="Peso"><span>' + esc(pct(p.peso)) + '</span><span class="x-bar" aria-hidden="true"><i style="width:' + (p.peso / maxPeso) * 100 + '%"></i></span></td>' +
             '<td data-label="Lucro">' + esc(sbrl(p.lucro)) + "</td>" +
             '<td class="num" data-label="Lucro %">' + esc(pct(p.lucro_pct, true)) + "</td>" +
+            '<td data-label="Objetivo">' + esc(p.objetivo || "—") + "</td>" +
             '<td class="muted" data-label="Corretora">' + esc(p.corretora) + "</td></tr>";
         }
         function drawPos() {
           var t = termo.toLowerCase();
-          var lista = pos.filter(function (p) { return !t || [p.ativo, p.classe, p.tipo, p.corretora, p.regiao, p.moeda].join(" ").toLowerCase().indexOf(t) >= 0; })
+          var fA = $("f-pos-ativo").value, fO = $("f-pos-obj").value, fC = $("f-pos-classe").value;
+          var lista = pos.filter(function (p) { return (!fA || p.ativo === fA) && (!fO || (p.objetivo || "—") === fO) && (!fC || p.classe === fC) && (!t || [p.ativo, p.classe, p.tipo, p.corretora, p.regiao, p.moeda, p.objetivo].join(" ").toLowerCase().indexOf(t) >= 0); })
             .sort(function (a, b) { return (a[sortKey] - b[sortKey]) * sortDir; });
-          $("t-pos").innerHTML = lista.length ? lista.map(rowPos).join("") : '<tr><td colspan="6" class="muted">Nenhuma posição encontrada.</td></tr>';
-          txt("cap-pos", lista.length + " de " + pos.length + " posições");
+          $("t-pos").innerHTML = lista.length ? lista.map(rowPos).join("") : '<tr><td colspan="7" class="muted">Nenhuma posição encontrada.</td></tr>';
+          var sv = lista.reduce(function (s, p) { return s + p.valor; }, 0), sl = lista.reduce(function (s, p) { return s + p.lucro; }, 0), sp = lista.reduce(function (s, p) { return s + p.peso; }, 0);
+          txt("cap-pos", lista.length + " de " + pos.length + " posições · " + brl(sv) + " (" + pct(sp) + " da carteira) · lucro " + sbrl(sl));
         }
         [].forEach.call(document.querySelectorAll(".x-sort"), function (b) {
           b.addEventListener("click", function () {
@@ -2204,6 +2211,14 @@ tr.is-highlight > :last-child { box-shadow: 12px 0 var(--fill-tertiary); }
         });
         document.querySelector('.x-sort[aria-pressed="true"]').textContent += " ↓";
         $("busca").addEventListener("input", function (e) { termo = e.target.value.trim(); drawPos(); });
+        function opts(id, todos, vals) {
+          var u = []; vals.forEach(function (v) { if (u.indexOf(v) < 0) u.push(v); }); u.sort(function (a, b) { return String(a).localeCompare(String(b), "pt-BR"); });
+          $(id).innerHTML = '<option value="">' + todos + '</option>' + u.map(function (v) { return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join("");
+          $(id).addEventListener("change", drawPos);
+        }
+        opts("f-pos-ativo", "Todos os ativos", pos.map(function (p) { return p.ativo; }));
+        opts("f-pos-obj", "Todos os objetivos", pos.map(function (p) { return p.objetivo || "—"; }));
+        opts("f-pos-classe", "Todas as classes", pos.map(function (p) { return p.classe; }));
         drawPos();
 
         // 5. risco
@@ -2890,7 +2905,7 @@ function getPainelDados() {
     if (peso < PESO_MIN_POSICAO) return;
     posicoes.push({ ativo: nomeAtivo_(p.ativo), valor: r0_(p.v), peso: r1_(peso), lucro: r0_(p.l),
       lucro_pct: p.c ? r1_(p.l / p.c * 100) : 0, classe: p.m, tipo: p.t, corretora: p.cor,
-      regiao: p.reg, moeda: p.moeda });
+      regiao: p.reg, moeda: p.moeda, objetivo: p.o });
   });
 
   // ---------- concentração (sem caixa)
