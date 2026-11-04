@@ -891,6 +891,42 @@ tr.is-highlight > :last-child { box-shadow: 12px 0 var(--fill-tertiary); }
           </figure>
         </section>
 
+
+        <section class="section" id="diario" data-nav="Dia">
+          <div class="head">
+            <h2>Resultado do dia.</h2>
+            <p class="head__sub" id="dd-sub">Resultado de hoje por ativo e os últimos dias da cota.</p>
+          </div>
+          <section class="stats">
+            <div class="stat"><span class="stat__fig" id="dd-hoje">—</span><span class="stat__label" id="dd-hoje-l">Resultado de hoje (ao vivo)</span></div>
+            <div class="stat"><span class="stat__fig" id="dd-mes">—</span><span class="stat__label" id="dd-mes-l">Acumulado no mês</span></div>
+            <div class="stat"><span class="stat__fig" id="dd-pos">—</span><span class="stat__label" id="dd-pos-l">Dias positivos</span></div>
+          </section>
+          <figure class="chart">
+            <figcaption class="chart__cap" id="cap-dd-obj">Hoje por objetivo<small>R$ · soma do "Resultado do Dia" da Swing</small></figcaption>
+            <div class="chart__canvas"><canvas id="c-dd-obj" role="img" aria-label="Resultado de hoje por objetivo"></canvas></div>
+          </figure>
+          <figure class="chart">
+            <figcaption class="chart__cap" id="cap-dd-hist">Resultado por dia<small>R$ · patrimônio do dia anterior × variação da cota (aportes não contam)</small></figcaption>
+            <div class="x-controls">
+              <select class="x-field" id="dd-janela" aria-label="Período do gráfico diário">
+                <option value="22">Últimos 22 dias úteis</option><option value="66">Últimos 3 meses</option><option value="130">Últimos 6 meses</option><option value="260">Último ano</option>
+              </select>
+            </div>
+            <div class="chart__canvas chart__canvas--tall"><canvas id="c-dd-hist" role="img" aria-label="Resultado diário da carteira em reais"></canvas></div>
+          </figure>
+          <div class="x-controls">
+            <select class="x-field" id="dd-f-obj" aria-label="Filtrar resultado de hoje por objetivo"></select>
+          </div>
+          <div class="table-wrap x-scroll">
+            <table>
+              <caption id="cap-dd-at"></caption>
+              <thead><tr><th scope="col">Ativo</th><th scope="col">Hoje</th><th scope="col">Hoje %</th><th scope="col">Valor</th><th scope="col">Objetivo</th></tr></thead>
+              <tbody id="t-dd-at"></tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="section" id="desempenho" data-nav="Desempenho">
           <div class="head">
             <h2>Mês a mês e ano a ano.</h2>
@@ -2384,6 +2420,109 @@ tr.is-highlight > :last-child { box-shadow: 12px 0 var(--fill-tertiary); }
       };
     </script>
 
+<script>
+window.__renderDiario = function (A) {
+  function $(i) { return document.getElementById(i); }
+  function num(v, d) { return Number(v).toLocaleString("pt-BR", { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); }
+  function brl(v) { var s = "R$ " + num(Math.abs(v)); return v < 0 ? "−" + s : s; }
+  function sbrl(v) { return (v > 0 ? "+" : "") + brl(v); }
+  function pct(v, d) { d = d == null ? 2 : d; var s = num(Math.abs(v), d) + "%"; return v < 0 ? "−" + s : (v > 0 ? "+" : "") + s; }
+  function brlK(v) { var a = Math.abs(v), s = a >= 1e6 ? "R$ " + num(a / 1e6, 2) + " mi" : a >= 1e3 ? "R$ " + num(a / 1e3) + " mil" : "R$ " + num(a); return v < 0 ? "−" + s : s; }
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function sd(x) { return new Date(Date.UTC(1899, 11, 30) + Math.round(x) * 86400000 + 12 * 3600000); }
+  function dm(d) { return String(d.getUTCDate()).padStart(2, "0") + "/" + String(d.getUTCMonth() + 1).padStart(2, "0"); }
+  function dmy(d) { return dm(d) + "/" + d.getUTCFullYear(); }
+  function N(x) { return typeof x === "number" && isFinite(x) ? x : (typeof x === "string" && x.trim() ? (parseFloat(x.replace(/\./g, "").replace(",", ".")) || 0) : 0); }
+  function idx(h, n) { for (var i = 0; i < h.length; i++) if (String(h[i]).trim() === n) return i; return -1; }
+  var cs = getComputedStyle(document.documentElement);
+  function cor(v, f) { var c = cs.getPropertyValue(v).trim(); return c && c.indexOf("light-dark") < 0 ? c : f; }
+  var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+  var GOOD = cor("--chart-good", dark ? "#8fa898" : "#607868"), BAD = cor("--chart-bad", dark ? "#b97f7a" : "#9c635e");
+  var lab = (window.Hark && Hark.labels && Hark.labels.values) || false;
+
+  // ---- hoje, por ativo (Swing, Status Aberto)
+  var sv = A["Swing"] || [[]], sh = sv[0] || [];
+  var sA = idx(sh, "Ativo"), sS = idx(sh, "Status"), sK = idx(sh, "Objetivo Alocação"), sV = idx(sh, "Valor Atual"), sR = idx(sh, "Resultado do Dia");
+  if (sR < 0) throw new Error('coluna "Resultado do Dia" não encontrada na Swing');
+  var pos = {}, ordem = [];
+  sv.slice(1).forEach(function (r) {
+    if (String(r[sS]).trim() !== "Aberto") return;
+    var a = String(r[sA]).trim(); if (!a) return; a = a.indexOf(":") >= 0 ? a.split(":").pop() : a; a = a.replace(/^@@/, "");
+    if (!pos[a]) { pos[a] = { a: a, v: 0, r: 0, o: String(r[sK] || "").trim() || "—" }; ordem.push(a); }
+    pos[a].v += N(r[sV]); pos[a].r += N(r[sR]);
+  });
+  var P = ordem.map(function (k) { return pos[k]; }).filter(function (p) { return Math.abs(p.v) > 0.5 || Math.abs(p.r) > 0.5; });
+  var totV = P.reduce(function (s, p) { return s + p.v; }, 0), totR = P.reduce(function (s, p) { return s + p.r; }, 0);
+  $("dd-hoje").textContent = sbrl(totR);
+  $("dd-hoje-l").textContent = "Hoje, ao vivo (" + pct(totV - totR ? totR / (totV - totR) * 100 : 0) + ")";
+
+  // por objetivo
+  var porObj = {};
+  P.forEach(function (p) { porObj[p.o] = (porObj[p.o] || 0) + p.r; });
+  var objs = Object.keys(porObj).sort(function (a, b) { return porObj[b] - porObj[a]; });
+  new Chart($("c-dd-obj"), {
+    type: "bar",
+    data: { labels: objs, datasets: [{ label: "Hoje", data: objs.map(function (o) { return Math.round(porObj[o]); }), backgroundColor: objs.map(function (o) { return porObj[o] >= 0 ? GOOD : BAD; }) }] },
+    options: { indexAxis: "y", scales: { x: { ticks: { callback: brlK } } },
+      plugins: { legend: { display: false }, datalabels: lab ? Object.assign({}, lab, { formatter: function (v) { return sbrl(v); } }) : false,
+        tooltip: { callbacks: { label: function (c) { return sbrl(c.raw); } } } } }
+  });
+
+  // tabela por ativo, com filtro de objetivo
+  var fo = $("dd-f-obj");
+  fo.innerHTML = '<option value="">Todos os objetivos</option>' + objs.slice().sort(function (a, b) { return a.localeCompare(b, "pt-BR"); }).map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + "</option>"; }).join("");
+  function tabela() {
+    var f = fo.value;
+    var L = P.filter(function (p) { return !f || p.o === f; }).sort(function (a, b) { return a.r - b.r; }).reverse();
+    var s = L.reduce(function (x, p) { return x + p.r; }, 0), v = L.reduce(function (x, p) { return x + p.v; }, 0);
+    $("cap-dd-at").textContent = L.length + " ativos · hoje " + sbrl(s) + " (" + pct(v - s ? s / (v - s) * 100 : 0) + ")";
+    $("t-dd-at").innerHTML = L.map(function (p) {
+      var base = p.v - p.r, pc = base ? p.r / base * 100 : 0;
+      return '<tr><th scope="row">' + esc(p.a) + '</th><td data-label="Hoje">' + esc(sbrl(p.r)) + '</td><td class="num" data-label="Hoje %">' + esc(pct(pc)) +
+        '</td><td class="num" data-label="Valor">' + esc(brl(p.v)) + '</td><td data-label="Objetivo">' + esc(p.o) + "</td></tr>";
+    }).join("") || '<tr><td colspan="5" class="muted">Nenhum ativo.</td></tr>';
+  }
+  fo.addEventListener("change", tabela); tabela();
+
+  // ---- histórico (Rentabilidade: Total e Valor da Cota)
+  var rv = A["Rentabilidade"] || [[]], rh = rv[0] || [], rD = idx(rh, "Data"), rC = idx(rh, "Valor da Cota"), rT = idx(rh, "Total");
+  var dias = rv.slice(1).filter(function (r) { return typeof r[rD] === "number" && N(r[rC]) > 0 && N(r[rT]) > 0; })
+    .map(function (r) { return { s: Math.round(r[rD]), c: N(r[rC]), t: N(r[rT]) }; }).sort(function (a, b) { return a.s - b.s; });
+  var H = [];
+  for (var i = 1; i < dias.length; i++) {
+    if (dias[i].s === dias[i - 1].s) continue;
+    var p = dias[i].c / dias[i - 1].c - 1;
+    H.push({ d: sd(dias[i].s), pct: p * 100, rs: dias[i - 1].t * p });
+  }
+  if (!H.length) { $("dd-sub").textContent = "Sem histórico na Rentabilidade."; return; }
+  var u = H[H.length - 1], mesK = u.d.getUTCFullYear() * 12 + u.d.getUTCMonth();
+  var doMes = H.filter(function (x) { return x.d.getUTCFullYear() * 12 + x.d.getUTCMonth() === mesK; });
+  var mRs = doMes.reduce(function (s, x) { return s + x.rs; }, 0), mF = doMes.reduce(function (f, x) { return f * (1 + x.pct / 100); }, 1);
+  $("dd-mes").textContent = sbrl(mRs);
+  $("dd-mes-l").textContent = "No mês até " + dm(u.d) + " (" + pct((mF - 1) * 100) + ")";
+  $("dd-sub").textContent = "Hoje ao vivo pela Swing. Histórico pelo fechamento da Rentabilidade, último em " + dmy(u.d) + ".";
+  var ch = null;
+  function hist() {
+    var n = +$("dd-janela").value, J = H.slice(-n);
+    var posN = J.filter(function (x) { return x.rs > 0; }).length;
+    var mel = J.reduce(function (m, x) { return x.rs > m.rs ? x : m; }, J[0]), pio = J.reduce(function (m, x) { return x.rs < m.rs ? x : m; }, J[0]);
+    $("dd-pos").textContent = posN + " de " + J.length;
+    $("dd-pos-l").textContent = "Dias positivos no período";
+    $("cap-dd-hist").innerHTML = "Melhor dia " + esc(dm(mel.d)) + " (" + esc(sbrl(mel.rs)) + "), pior " + esc(dm(pio.d)) + " (" + esc(sbrl(pio.rs)) + ")" +
+      "<small>R$ por dia · patrimônio do dia anterior × variação da cota (aportes não contam)</small>";
+    if (ch) ch.destroy();
+    ch = new Chart($("c-dd-hist"), {
+      type: "bar",
+      data: { labels: J.map(function (x) { return dm(x.d); }), datasets: [{ label: "Resultado", data: J.map(function (x) { return Math.round(x.rs); }), backgroundColor: J.map(function (x) { return x.rs >= 0 ? GOOD : BAD; }) }] },
+      options: { scales: { y: { ticks: { callback: brlK } } },
+        plugins: { legend: { display: false }, datalabels: false,
+          tooltip: { callbacks: { label: function (c) { var x = J[c.dataIndex]; return sbrl(x.rs) + " (" + pct(x.pct) + ")"; } } } } }
+    });
+  }
+  $("dd-janela").addEventListener("change", hist); hist();
+};
+</script>
+
 <div id="gate" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:var(--bg,#f6f5f2);font-family:inherit;padding:24px">
   <div style="max-width:340px;text-align:center">
     <div style="font-size:22px;font-weight:600;margin-bottom:8px">Carteira do Caio</div>
@@ -3016,6 +3155,7 @@ function testePainel() {
           var D = getPainelDados();
           window.__renderPainel(D);
           gate.style.display = 'none';
+          try { window.__renderDiario(abas); } catch (e3) { var el3 = document.getElementById('dd-sub'); if (el3) el3.textContent = 'Falha no bloco Dia: ' + (e3 && e3.message || e3); }
           try { window.__renderCresc(abas); } catch (e2) { var el = document.getElementById('cr-sub'); if (el) el.textContent = 'Falha no bloco Crescimento: ' + (e2 && e2.message || e2); }
         } catch (e) { erro('Falha ao montar o painel: ' + (e && e.message || e)); }
       }, 30);
