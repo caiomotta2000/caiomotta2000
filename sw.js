@@ -13,6 +13,7 @@ self.addEventListener('fetch',e=>{
   if(req.method!=='GET') return;
   const url=new URL(req.url);
   if(url.pathname.includes('/mesada/')) return; // app de mesada tem o próprio service worker
+  if(url.pathname.includes('/carteira/')) return; // painel da carteira: sempre da rede
   if(req.mode==='navigate' || (url.origin===location.origin && url.pathname.endsWith('.html'))){
     e.respondWith(fetch(req).then(r=>{ const c=r.clone(); caches.open(CACHE).then(k=>k.put('./index.html',c)); return r; })
       .catch(()=>caches.match('./index.html').then(r=>r||caches.match('./'))));
