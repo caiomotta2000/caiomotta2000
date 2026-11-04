@@ -930,6 +930,46 @@ tr.is-highlight > :last-child { box-shadow: 12px 0 var(--fill-tertiary); }
           <p class="fineprint" id="nota-sub"></p>
         </section>
 
+
+        <section class="section" id="crescimento" data-nav="Crescimento">
+          <div class="head">
+            <h2>Crescimento, com cota própria.</h2>
+            <p class="head__sub" id="cr-sub">Cota exclusiva do objetivo Crescimento, base 100 no início do controle.</p>
+          </div>
+          <section class="stats">
+            <div class="stat"><span class="stat__fig" id="cr-patr">—</span><span class="stat__label">Patrimônio Crescimento (agora)</span></div>
+            <div class="stat"><span class="stat__fig" id="cr-cota">—</span><span class="stat__label" id="cr-cota-l">Valor da cota</span></div>
+            <div class="stat"><span class="stat__fig" id="cr-dia">—</span><span class="stat__label">Resultado do dia</span></div>
+          </section>
+          <section class="stats">
+            <div class="stat"><span class="stat__fig" id="cr-ret">—</span><span class="stat__label">Retorno da cota</span></div>
+            <div class="stat"><span class="stat__fig" id="cr-cdi">—</span><span class="stat__label">CDI no mesmo período</span></div>
+            <div class="stat"><span class="stat__fig" id="cr-ibov">—</span><span class="stat__label">Ibov no mesmo período</span></div>
+          </section>
+          <figure class="chart">
+            <figcaption class="chart__cap" id="cap-cr">Cota do Crescimento, CDI e Ibov<small>Base 100 no início</small></figcaption>
+            <div class="chart__canvas chart__canvas--tall"><canvas id="c-cr" role="img" aria-label="Cota do Crescimento contra CDI e Ibovespa em base 100"></canvas></div>
+          </figure>
+          <figure class="chart">
+            <figcaption class="chart__cap">Patrimônio contra capital investido<small>R$ por dia · capital = patrimônio inicial + aportes − resgates</small></figcaption>
+            <div class="chart__canvas"><canvas id="c-cr-pat" role="img" aria-label="Patrimônio do Crescimento e capital investido por dia"></canvas></div>
+          </figure>
+          <div class="table-wrap x-scroll">
+            <table>
+              <caption id="cap-cr-pos"></caption>
+              <thead><tr><th scope="col">Ativo</th><th scope="col">Valor</th><th scope="col">Peso</th><th scope="col">Lucro</th><th scope="col">Dia</th></tr></thead>
+              <tbody id="t-cr-pos"></tbody>
+            </table>
+          </div>
+          <div class="table-wrap x-scroll">
+            <table>
+              <caption id="cap-cr-fl">Aportes e resgates do Crescimento</caption>
+              <thead><tr><th scope="col">Data</th><th scope="col">Valor</th><th scope="col">Tipo</th><th scope="col">Observação</th></tr></thead>
+              <tbody id="t-cr-fl"></tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="section" id="posicoes" data-nav="Posições">
           <div class="head">
             <p class="head__eyebrow">Posição atual · não muda com o filtro</p>
@@ -2336,6 +2376,107 @@ tr.is-highlight > :last-child { box-shadow: 12px 0 var(--fill-tertiary); }
     <button id="gate-btn" type="button" style="font:inherit;font-size:16px;padding:12px 22px;border-radius:999px;border:0;background:#111;color:#fff;cursor:pointer">Entrar com Google</button>
   </div>
 </div>
+
+<script>
+window.__renderCresc = function (A) {
+  function $(i) { return document.getElementById(i); }
+  function num(v, d) { return Number(v).toLocaleString("pt-BR", { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); }
+  function brl(v) { var s = "R$ " + num(Math.abs(v)); return v < 0 ? "−" + s : s; }
+  function sbrl(v) { return (v > 0 ? "+" : "") + brl(v); }
+  function pct(v, d) { d = d == null ? 1 : d; var s = num(Math.abs(v), d) + "%"; return v < 0 ? "−" + s : (v > 0 ? "+" : "") + s; }
+  function brlK(v) { var a = Math.abs(v), s = a >= 1e6 ? "R$ " + num(a / 1e6, 2) + " mi" : a >= 1e3 ? "R$ " + num(a / 1e3) + " mil" : "R$ " + num(a); return v < 0 ? "−" + s : s; }
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function sd(x) { return new Date(Date.UTC(1899, 11, 30) + Math.round(x) * 86400000 + 12 * 3600000); }
+  function dm(d) { return String(d.getUTCDate()).padStart(2, "0") + "/" + String(d.getUTCMonth() + 1).padStart(2, "0"); }
+  function dmy(d) { return dm(d) + "/" + d.getUTCFullYear(); }
+  function N(x) { return typeof x === "number" && isFinite(x) ? x : (typeof x === "string" && x.trim() ? (parseFloat(x.replace(/\./g, "").replace(",", ".")) || 0) : 0); }
+  function idx(h, n) { for (var i = 0; i < h.length; i++) if (String(h[i]).trim() === n) return i; return -1; }
+
+  // cota
+  var cv = A["Cota Crescimento"] || [[]], ch = cv[0] || [];
+  var iD = idx(ch, "Data"), iP = idx(ch, "Patrimônio Crescimento (R$)"), iA = idx(ch, "Aporte/resgate na classe (R$)"), iC = idx(ch, "Valor da cota (R$)");
+  var dias = cv.slice(1).filter(function (r) { return typeof r[iD] === "number" && N(r[iC]) > 0; })
+    .map(function (r) { return { s: r[iD], d: sd(r[iD]), p: N(r[iP]), a: N(r[iA]), c: N(r[iC]) }; });
+  if (!dias.length) { $("cr-sub").textContent = "A aba Cota Crescimento ainda não tem dados."; return; }
+  var b = dias[0], u = dias[dias.length - 1];
+  var cap = 0; dias.forEach(function (x, i) { cap = i === 0 ? x.p : cap + x.a; x.cap = cap; });
+
+  // Ibov do mesmo dia (Rentabilidade)
+  var rv = A["Rentabilidade"] || [[]], rh = rv[0] || [], rD = idx(rh, "Data"), rI = idx(rh, "Preço iBOV"), ib = {};
+  rv.slice(1).forEach(function (r) { if (typeof r[rD] === "number" && N(r[rI]) > 0) ib[Math.round(r[rD])] = N(r[rI]); });
+  var ibUlt = null; dias.forEach(function (x) { var v = ib[Math.round(x.s)]; if (v) ibUlt = v; x.ib = ibUlt; });
+  // CDI diário (BCB série 12), acumulado a partir do dia base
+  var cdiF = {}; try {
+    var x = new XMLHttpRequest();
+    x.open("GET", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial=" + dmy(b.d), false); x.send(null);
+    if (x.status === 200) JSON.parse(x.responseText).forEach(function (o) { var p = o.data.split("/"); cdiF[p[2] + p[1] + p[0]] = parseFloat(o.valor) / 100; });
+  } catch (e) {}
+  function key(d) { return d.getUTCFullYear() + String(d.getUTCMonth() + 1).padStart(2, "0") + String(d.getUTCDate()).padStart(2, "0"); }
+  var ks = Object.keys(cdiF).sort(), temCdi = ks.length > 0;
+  dias.forEach(function (x) { var f = 1, k0 = key(b.d), k1 = key(x.d); ks.forEach(function (k) { if (k > k0 && k <= k1) f *= 1 + cdiF[k]; }); x.cdi = f; });
+
+  // posições Crescimento (Swing aberto, Objetivo Alocação = Crescimento)
+  var sv = A["Swing"] || [[]], sh = sv[0] || [];
+  var sA = idx(sh, "Ativo"), sS = idx(sh, "Status"), sK = idx(sh, "Objetivo Alocação"), sV = idx(sh, "Valor Atual"), sL = idx(sh, "Lucro Consolidado"), sR = idx(sh, "Resultado do Dia");
+  var pos = {}, ordem = [];
+  sv.slice(1).forEach(function (r) {
+    if (String(r[sS]).trim() !== "Aberto" || String(r[sK]).trim() !== "Crescimento") return;
+    var a = String(r[sA]).trim(); a = a.indexOf(":") >= 0 ? a.split(":").pop() : a; a = a.replace(/^@@/, "");
+    if (!pos[a]) { pos[a] = { a: a, v: 0, l: 0, r: 0 }; ordem.push(a); }
+    pos[a].v += N(r[sV]); pos[a].l += N(r[sL]); pos[a].r += N(r[sR]);
+  });
+  var L = ordem.map(function (k) { return pos[k]; }).filter(function (p) { return Math.abs(p.v) > 0.5; }).sort(function (x, y) { return y.v - x.v; });
+  var tot = L.reduce(function (s, p) { return s + p.v; }, 0), dia = L.reduce(function (s, p) { return s + p.r; }, 0);
+
+  $("cr-patr").textContent = brl(tot);
+  $("cr-cota").textContent = num(u.c, 2);
+  $("cr-cota-l").textContent = "Valor da cota em " + dmy(u.d);
+  $("cr-dia").textContent = sbrl(dia);
+  $("cr-ret").textContent = pct((u.c / b.c - 1) * 100);
+  $("cr-cdi").textContent = temCdi ? pct((u.cdi - 1) * 100, 2) : "—";
+  $("cr-ibov").textContent = (b.ib && u.ib) ? pct((u.ib / b.ib - 1) * 100) : "—";
+  $("cr-sub").textContent = "Cota exclusiva do objetivo Crescimento, base 100 em " + dmy(b.d) + ". Último fechamento: " + dmy(u.d) + ".";
+
+  var labels = dias.map(function (x) { return dm(x.d); });
+  new Chart($("c-cr"), {
+    type: "line",
+    data: { labels: labels, datasets: [
+      { label: "Cota", data: dias.map(function (x) { return +(x.c / b.c * 100).toFixed(2); }), borderColor: "var(--chart-ink)", borderWidth: 2 },
+      { label: "CDI", data: temCdi ? dias.map(function (x) { return +(x.cdi * 100).toFixed(2); }) : [], borderColor: "var(--chart-6)" },
+      { label: "Ibov", data: b.ib ? dias.map(function (x) { return x.ib ? +(x.ib / b.ib * 100).toFixed(2) : null; }) : [], borderColor: "var(--chart-3)" }
+    ] },
+    options: { interaction: { mode: "index", intersect: false },
+      plugins: { legend: { display: false }, datalabels: (window.Hark && Hark.labels && Hark.labels.ends) || false,
+        tooltip: { callbacks: { label: function (c) { return c.dataset.label + ": " + num(c.raw, 1); } } } } }
+  });
+  $("cap-cr").innerHTML = "Cota em " + num(u.c / b.c * 100, 1) + (temCdi ? ", CDI em " + num(u.cdi * 100, 1) : "") + (b.ib && u.ib ? " e Ibov em " + num(u.ib / b.ib * 100, 1) : "") + "<small>Base 100 em " + dmy(b.d) + "</small>";
+  new Chart($("c-cr-pat"), {
+    type: "line",
+    data: { labels: labels, datasets: [
+      { label: "Patrimônio", data: dias.map(function (x) { return Math.round(x.p); }) },
+      { label: "Capital investido", data: dias.map(function (x) { return Math.round(x.cap); }), stepped: true }
+    ] },
+    options: { interaction: { mode: "index", intersect: false }, scales: { y: { ticks: { callback: brlK } } },
+      plugins: { legend: { display: false }, datalabels: (window.Hark && Hark.labels && Hark.labels.ends) || false,
+        tooltip: { callbacks: { label: function (c) { return c.dataset.label + ": " + brl(c.raw); } } } } }
+  });
+
+  $("cap-cr-pos").textContent = L.length + " posições do Crescimento, " + brl(tot) + " ao vivo";
+  $("t-cr-pos").innerHTML = L.map(function (p) {
+    return "<tr><td>" + esc(p.a) + "</td><td>" + brl(p.v) + "</td><td>" + num(p.v / tot * 100, 1) + "%</td><td>" + sbrl(p.l) + "</td><td>" + sbrl(p.r) + "</td></tr>";
+  }).join("");
+
+  var fv = A["Fluxos Crescimento"] || [[]], fh = fv[0] || [];
+  var fD = idx(fh, "Data"), fV = idx(fh, "Fluxo Crescimento (R$)"), fT = idx(fh, "Tipo"), fO = idx(fh, "Observações");
+  var fl = fv.slice(1).filter(function (r) { return typeof r[fD] === "number" && N(r[fV]) !== 0; }).sort(function (x, y) { return y[fD] - x[fD]; });
+  var liq = fl.reduce(function (s, r) { return s + N(r[fV]); }, 0);
+  $("cap-cr-fl").textContent = "Aportes e resgates do Crescimento · líquido " + sbrl(liq);
+  $("t-cr-fl").innerHTML = fl.length ? fl.map(function (r) {
+    return "<tr><td>" + dmy(sd(r[fD])) + "</td><td>" + sbrl(N(r[fV])) + "</td><td>" + esc(r[fT] || "") + "</td><td>" + esc(r[fO] || "") + "</td></tr>";
+  }).join("") : "<tr><td colspan=4>Nenhum movimento registrado.</td></tr>";
+};
+</script>
+
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 (function () {
@@ -2835,8 +2976,8 @@ function testePainel() {
 (function () {
   var CLIENT_ID = '836096160065-r3lvbp150sefm437r3rid7gau7861pp6.apps.googleusercontent.com';
   var SCOPE = 'https://www.googleapis.com/auth/spreadsheets.readonly';
-  var RANGES = ["Swing!A1:BZ", "Rentabilidade!A1:BO", "'Referência Portfólio'!A1:F60", "'Movimentações'!A1:P"];
-  var NOMES = ['Swing', 'Rentabilidade', 'Referência Portfólio', 'Movimentações'];
+  var RANGES = ["Swing!A1:BZ", "Rentabilidade!A1:BO", "'Referência Portfólio'!A1:F60", "'Movimentações'!A1:P", "'Cota Crescimento'!A1:H", "'Fluxos Crescimento'!A1:E"];
+  var NOMES = ['Swing', 'Rentabilidade', 'Referência Portfólio', 'Movimentações', 'Cota Crescimento', 'Fluxos Crescimento'];
   var msg = document.getElementById('gate-msg'), btn = document.getElementById('gate-btn'), gate = document.getElementById('gate');
   var KEY = 'carteira_token';
 
@@ -2860,6 +3001,7 @@ function testePainel() {
           var D = getPainelDados();
           window.__renderPainel(D);
           gate.style.display = 'none';
+          try { window.__renderCresc(abas); } catch (e2) { var el = document.getElementById('cr-sub'); if (el) el.textContent = 'Falha no bloco Crescimento: ' + (e2 && e2.message || e2); }
         } catch (e) { erro('Falha ao montar o painel: ' + (e && e.message || e)); }
       }, 30);
     }).catch(function (e) { erro(e.message || String(e)); });
