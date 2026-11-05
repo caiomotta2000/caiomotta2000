@@ -2,6 +2,9 @@
 
 Formato: [SemVer](https://semver.org/lang/pt-BR/). A tela "Novidades" do app lê `js/version.js`.
 
+## v1.2.0 — 2026-11-04
+- Visão da criança: card "Minhas tarefas" na tela inicial (só leitura) com progresso de cada tarefa padrão (estrelas), % geral, mesada garantida até agora e lista de tarefas extras com valores.
+
 ## v1.1.0 — 2026-11-02
 
 **PT-BR**

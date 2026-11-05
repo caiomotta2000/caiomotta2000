@@ -343,8 +343,44 @@
       </section>
       <h2 class="section-title">${T('myPots')}</h2>
       <section class="pot-grid pots-${pots.length}">${cards}</section>
+      ${kidChoresCard(c)}
       ${footer()}`, 'kidHome');
   };
+
+  // v1.2: a criança vê (só leitura) o andamento das tarefas — quem marca é o pai
+  function kidChoresCard(c) {
+    const std = c.chores.standard, ext = c.chores.extra;
+    if (!std.length && !ext.length) return '';
+    const ratio = L.choreRatio(c);
+    const pct = Math.round(ratio * 100);
+    const items = std.map(ch => {
+      const full = ch.perCycle > 0 && ch.done >= ch.perCycle;
+      const stars = ch.perCycle > 0 && ch.perCycle <= 10
+        ? Array.from({ length: ch.perCycle }, (_, i) => `<span class="star ${i < ch.done ? 'on' : ''}">${i < ch.done ? '⭐' : '☆'}</span>`).join('')
+        : '';
+      return `
+        <li class="kchore ${full ? 'full' : ''}">
+          <div class="chore-name"><b>${full ? '✅ ' : ''}${esc(ch.name)}</b>
+            <small class="muted">${T('kidChoreCount', { done: ch.done, per: ch.perCycle })}</small>
+            ${stars ? `<div class="stars" aria-hidden="true">${stars}</div>` : progressBar(ch.perCycle ? ch.done / ch.perCycle * 100 : 0, c.color)}
+          </div>
+        </li>`;
+    }).join('');
+    const extras = ext.length ? `
+        <h3 class="kchores-sub">⭐ ${T('kidExtraTitle')}</h3>
+        <div class="extra-list">${ext.map(x => `<span class="chip-extra">${esc(x.name)} <b>+${M(x.value)}</b></span>`).join('')}</div>` : '';
+    return `
+      <h2 class="section-title">✅ ${T('kidChoresTitle')}</h2>
+      <section class="card kid-chores">
+        ${std.length ? `
+        <p class="kchores-total"><b>${T('kidChoresPct', { pct })}</b></p>
+        ${progressBar(pct, c.color)}
+        <p class="muted">${T('kidAllowanceSoFar', { due: M(L.allowanceDue(c)), full: M(c.allowance) })}</p>
+        <p class="kchores-msg">${pct >= 100 ? '🎉 ' + T('kidChoresAllDone') : '🦉 ' + T('kidChoresHint')}</p>
+        <ul class="chores">${items}</ul>` : ''}
+        ${extras}
+      </section>`;
+  }
 
   function potCard(c, k) {
     const meta = POT_META[k];

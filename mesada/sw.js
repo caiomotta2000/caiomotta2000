@@ -1,6 +1,6 @@
 /* Service worker: guarda o app para funcionar offline.
  * Ao lançar versão nova, mude CACHE_NAME (igual ao APP_VERSION). */
-const CACHE_NAME = 'mesada-lili-v1.1.0';
+const CACHE_NAME = 'mesada-lili-v1.2.0';
 // SDK do Firebase (só baixado quando a sincronização está ligada): guardado para abrir offline
 const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/';
 const ASSETS = [

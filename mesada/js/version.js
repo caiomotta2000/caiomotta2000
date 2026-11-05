@@ -2,8 +2,20 @@
  * Ao lançar uma nova versão: atualize APP_VERSION, adicione uma entrada no topo de CHANGELOG,
  * atualize CHANGELOG.md, mude CACHE_NAME em sw.js e crie a tag git (ex.: v1.1.0). */
 (function (g) {
-  g.APP_VERSION = '1.1.0';
+  g.APP_VERSION = '1.2.0';
   g.CHANGELOG = [
+    {
+      version: '1.2.0',
+      date: '2026-11-04',
+      pt: [
+        'Agora você vê suas tarefas! ✅ Na tela inicial aparece "Minhas tarefas", com estrelinhas para cada vez que o papai marcou uma tarefa feita.',
+        'Mostra quanto da mesada você já garantiu e as tarefas extras para ganhar mais.'
+      ],
+      en: [
+        'Now you can see your chores! ✅ The home screen shows "My chores", with a star for each time Dad marked a chore as done.',
+        'It shows how much of your allowance you have earned so far, and the extra chores to earn more.'
+      ]
+    },
     {
       version: '1.1.0',
       date: '2026-11-02',

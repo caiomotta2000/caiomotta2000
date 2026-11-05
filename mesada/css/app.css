@@ -444,3 +444,14 @@ form.busy { opacity: .6; pointer-events: none; }
 .choice-col { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; }
 .forgot-link { display: block; margin: 10px auto 0; }
 #sync-form .link, #forgot-form .link { padding: 6px 0; }
+
+/* v1.2 tarefas na visão da criança */
+.kid-chores { padding: 16px 18px; margin-bottom: 18px; }
+.kchores-total { font-size: 1.2rem; margin: 0 0 4px; }
+.kchores-msg { font-weight: 700; margin: 8px 0 0; }
+.kchore.full .chore-name b { color: #2e7d32; }
+.stars { display: flex; flex-wrap: wrap; gap: 4px; font-size: 1.35rem; margin-top: 4px; }
+.star { opacity: .45; } .star.on { opacity: 1; }
+.kchores-sub { margin: 14px 0 4px; }
+.chip-extra { background: #fff8e1; border-radius: 999px; padding: 8px 14px; font-weight: 700; box-shadow: 0 3px 0 #ffe082; }
+.kchore { padding: 8px 0; border-bottom: 1px dashed #ece6ff; }
